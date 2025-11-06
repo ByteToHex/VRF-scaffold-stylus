@@ -1,0 +1,30 @@
+[package]
+name = "erc20-example"
+version = "0.0.1"
+edition = "2021"
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/OffchainLabs/stylus-hello-world"
+publish = false
+
+[dependencies]
+openzeppelin-stylus = "=0.2.0"
+alloy-primitives = "=0.8.20"
+stylus-sdk = "=0.9.0"
+
+[dev-dependencies]
+alloy = { version = "1.0.23", features = ["full"] }
+eyre = "0.6.8"
+tokio = { version = "1.12.0", features = ["full"] }
+
+[features]
+e2e = []
+export-abi = ["openzeppelin-stylus/export-abi"]
+
+[lib]
+crate-type = ["lib", "cdylib"]
+
+[[bin]]
+name = "erc20_example"
+path = "src/main.rs"
+
+
