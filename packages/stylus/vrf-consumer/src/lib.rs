@@ -46,7 +46,7 @@ sol_storage! {
         uint16 request_confirmations;
         uint32 num_words;
         Ownable ownable;
-
+        bool withdrawing;
     }
 }
 
@@ -267,10 +267,17 @@ impl DirectFundingConsumer {
     /// Withdraw native tokens
     pub fn withdraw_native(&mut self, amount: U256) -> Result<(), Vec<u8>> {
         self.ownable.only_owner()?;
+    
+        if self.withdrawing {
+            return Err("Re-entrancy detected".into());
+        }
+        self.withdrawing = true;
 
         // Transfer the amount
         self.vm()
             .call(&Call::new().value(amount), self.ownable.owner(), &[])?;
+
+        self.withdrawing = false;
 
         Ok(())
     }
