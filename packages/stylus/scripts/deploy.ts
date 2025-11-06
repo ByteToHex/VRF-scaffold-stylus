@@ -33,9 +33,16 @@ export default async function deployScript(deployOptions: DeployOptions) {
   await deployStylusContract({
     contract: "vrf-consumer",
     constructorArgs: [
-      "0x29576aB8152A09b9DC634804e4aDE73dA1f3a3CC",
+      "0x29576aB8152A09b9DC634804e4aDE73dA1f3a3CC", // Hardcoded Arbitrum Sepolia VRF V2+ Wrapper address
       config.deployerAddress!,
     ],
+    ...deployOptions,
+  });
+
+  await deployStylusContract({
+    contract: "erc20-example",
+    name: "erc20-example",
+    constructorArgs: ["Erc20Example", "EXAMPLE", "1000000000000000000000000"],
     ...deployOptions,
   });
 
