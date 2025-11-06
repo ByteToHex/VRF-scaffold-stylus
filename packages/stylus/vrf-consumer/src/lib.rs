@@ -268,16 +268,16 @@ impl DirectFundingConsumer {
     pub fn withdraw_native(&mut self, amount: U256) -> Result<(), Vec<u8>> {
         self.ownable.only_owner()?;
     
-        if self.withdrawing {
-            return Err("Re-entrancy detected".into());
+        if self.withdrawing.get() {
+            return Err("Re-entrancy attempt".into());
         }
-        self.withdrawing = true;
+        self.withdrawing.set(true);
 
         // Transfer the amount
         self.vm()
             .call(&Call::new().value(amount), self.ownable.owner(), &[])?;
 
-        self.withdrawing = false;
+        self.withdrawing.set(false);
 
         Ok(())
     }
