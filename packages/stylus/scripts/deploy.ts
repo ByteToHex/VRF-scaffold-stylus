@@ -98,7 +98,7 @@ export default async function deployScript(deployOptions: DeployOptions) {
     });
 
     const txHash = await walletClient.writeContract(request);
-    console.log(`Authorized minter set. Txn hash: ${txHash}`);
+    console.log(`Authorized minter set to ${vrfContractAddress}. Txn hash: ${txHash}`);
     
     // Wait for transaction confirmation
     await publicClient.waitForTransactionReceipt({ hash: txHash });

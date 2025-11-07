@@ -15,7 +15,6 @@
 extern crate alloc;
 
 use alloc::vec::Vec;
-use alloc::string::{String, ToString};
 
 /// Import items from the SDK. The prelude contains common traits and macros.
 use stylus_sdk::{
@@ -75,33 +74,28 @@ sol_interface! {
     }
 }
 
-// Define ERC20 interface
+// Define ERC20 interface - minimal interface with only functions we actually use
 sol_interface! {
     interface IERC20 {
         // Standard ERC20 functions
-        function totalSupply() external view returns (uint256);
-        function balanceOf(address account) external view returns (uint256);
+        // function totalSupply() external view returns (uint256);
+        // function balanceOf(address account) external view returns (uint256);
         function transfer(address to, uint256 amount) external returns (bool);
-        function allowance(address owner, address spender) external view returns (uint256);
-        function approve(address spender, uint256 amount) external returns (bool);
-        function transferFrom(address from, address to, uint256 amount) external returns (bool);
+        // function allowance(address owner, address spender) external view returns (uint256);
+        // function approve(address spender, uint256 amount) external returns (bool);
+        // function transferFrom(address from, address to, uint256 amount) external returns (bool);
         
-        // ERC20 Burnable functions
-        function burn(uint256 value) external;
-        function burnFrom(address account, uint256 value) external;
+        // // ERC20 Burnable functions
+        // function burn(uint256 value) external;
+        // function burnFrom(address account, uint256 value) external;
         
-        // ERC20 Metadata functions
-        function name() external view returns (string);
-        function symbol() external view returns (string);
-        function decimals() external view returns (uint8);
-        
-        // Capped functions
-        function cap() external view returns (uint256);
-        
-        // ERC165 function
-        function supportsInterface(bytes4 interfaceId) external view returns (bool);
-        
-        // Mint function (owner only, but included for completeness)
+        // // ERC20 Metadata functions
+        // function name() external view returns (string);
+        // function symbol() external view returns (string);
+        // function decimals() external view returns (uint8);
+
+        // function cap() external view returns (uint256);
+        // function supportsInterface(bytes4 interfaceId) external view returns (bool);
         function mint(address account, uint256 value) external;
     }
 }
@@ -145,11 +139,11 @@ impl VrfConsumer {
         owner: Address,
         erc20_token: Address,
     ) -> Result<(), Error> {
-        // Debug: Print addresses received in constructor
-        #[cfg(debug_assertions)]
-        {
-            debug_print_addresses(vrf_v2_plus_wrapper, owner, erc20_token);
-        }
+        
+        // #[cfg(debug_assertions)] // Debug: Print addresses received in constructor
+        // {
+        //     debug_print_addresses(vrf_v2_plus_wrapper, owner, erc20_token);
+        // }
         
         self.ownable.constructor(owner)?;
         self.i_vrf_v2_plus_wrapper.set(vrf_v2_plus_wrapper);
@@ -158,14 +152,14 @@ impl VrfConsumer {
         self.lottery_interval_hours.set(U256::from(4));
         self.accepting_participants.set(true);
         
-        // Debug: Print stored addresses after setting
-        #[cfg(debug_assertions)]
-        {
-            let stored_vrf = self.i_vrf_v2_plus_wrapper.get();
-            let stored_erc20 = self.erc20_token_address.get();
-            debug_print_address("Stored VRF Wrapper", stored_vrf);
-            debug_print_address("Stored ERC20 Token", stored_erc20);
-        }
+        
+        // #[cfg(debug_assertions)] // Debug: Print stored addresses after setting
+        // {
+        //     let stored_vrf = self.i_vrf_v2_plus_wrapper.get();
+        //     let stored_erc20 = self.erc20_token_address.get();
+        //     debug_print_address("Stored VRF Wrapper", stored_vrf);
+        //     debug_print_address("Stored ERC20 Token", stored_erc20);
+        // }
         
         self.callback_gas_limit.set(U32::from(100000));
         self.request_confirmations.set(U16::from(3));
@@ -215,8 +209,8 @@ impl VrfConsumer {
         let last_timestamp = self.last_request_timestamp.get();
         let lottery_interval_hours = self.lottery_interval_hours.get();
         let lottery_interval_seconds = lottery_interval_hours * U256::from(3600);
-        if block_timestamp < last_timestamp + lottery_interval_seconds { // check if the event has already started within the last hour
-            return Err(b"Raffle can only be performed once every four hours".to_vec());
+        if block_timestamp < last_timestamp + lottery_interval_seconds {
+            return Err(b"Too soon".to_vec());
         }
     
         let callback_gas_limit = self.callback_gas_limit.get().try_into().unwrap_or(100000);
@@ -273,7 +267,7 @@ impl VrfConsumer {
         let token_address = self.erc20_token_address.get();
         
         if token_address == Address::ZERO {
-            return Err("ERC20 token not set".into());
+            return Err(b"Token not set".to_vec());
         }
         
         let erc20 = IERC20::new(token_address);
@@ -291,7 +285,7 @@ impl VrfConsumer {
         }
     
         if random_words.is_empty() {
-            return Err(b"No random words".to_vec());
+            return Err(b"No words".to_vec());
         }
     
         let winner_index: usize = (random_words[0] % U256::from(self.participants.len() as u64))
@@ -299,11 +293,11 @@ impl VrfConsumer {
             .expect("winner index too large");
 
         let winner_address = self.participants.get(winner_index)
-            .ok_or_else(|| b"Invalid winner index".to_vec())?;
+            .ok_or_else(|| b"Invalid index".to_vec())?;
         let zero_address = Address::repeat_byte(0);
 
         if winner_address == zero_address {
-            return Err(b"No winner found".to_vec());
+            return Err(b"No winner".to_vec());
         }
 
         let total_prize = self.lottery_entry_fee.get() * U256::from(self.participants.len() as u64);
@@ -393,7 +387,7 @@ impl VrfConsumer {
         self.ownable.only_owner()?;
     
         if self.withdrawing.get() {
-            return Err("Only one withdrawal at a time".into());
+            return Err(b"Withdrawal in progress".to_vec());
         }
         self.withdrawing.set(true);
 
@@ -411,7 +405,7 @@ impl VrfConsumer {
         self.ownable.only_owner()?;
     
         if self.withdrawing.get() {
-            return Err("Only one withdrawal at a time".into());
+            return Err(b"Withdrawal in progress".to_vec());
         }
         self.withdrawing.set(true);
 
@@ -419,7 +413,7 @@ impl VrfConsumer {
         
         if token_address == Address::ZERO {
             self.withdrawing.set(false);
-            return Err("ERC20 token not set".into());
+            return Err(b"Token not set".to_vec());
         }
 
         let erc20 = IERC20::new(token_address);
@@ -482,15 +476,14 @@ impl VrfConsumer {
         U256::from(self.participants.len())
     }
 
-    pub fn get_user_address(&self, index: U256) -> Result<String, Vec<u8>> {
-        let idx: usize = index.try_into().map_err(|_| b"Index out of bounds".to_vec())?;
+    pub fn get_user_address(&self, index: U256) -> Result<Address, Vec<u8>> {
+        let idx: usize = index.try_into().map_err(|_| b"OOB".to_vec())?;
         if idx >= self.participants.len() {
-            return Err(b"Index out of bounds".to_vec());
+            return Err(b"OOB".to_vec());
         }
     
-        Ok(self.participants.get(idx)
-            .map(|s| s.to_string())
-            .unwrap_or_default())
+        self.participants.get(idx)
+            .ok_or_else(|| b"OOB".to_vec())
     }
 
     /// Participate in the lottery by paying the entry fee
@@ -498,19 +491,19 @@ impl VrfConsumer {
     #[payable]
     pub fn participate_in_lottery(&mut self) -> Result<(), Vec<u8>> {
         if !self.accepting_participants.get() {
-            return Err(b"Event is not accepting participants".to_vec());
+            return Err(b"Not accepting participants".to_vec());
         }
 
         // Get the required entry fee
         let entry_fee = self.lottery_entry_fee.get();
         
         if entry_fee == U256::ZERO {
-            return Err(b"Lottery entry fee not set".to_vec());
+            return Err(b"Fee not set".to_vec());
         }
 
         let sent_amount = self.vm().msg_value();
         if sent_amount != entry_fee {
-            return Err(b"Amount sent does not match entry fee".to_vec());
+            return Err(b"Wrong amount".to_vec());
         }
 
         // Get the participant's address
@@ -563,24 +556,24 @@ impl VrfConsumer {
 
 // Note: We keep ownership management internal through `ownable`.
 
-/// Debug helper function to print an address with a label
-#[cfg(debug_assertions)]
-fn debug_print_address(label: &str, address: Address) {
-    let address_hex = format!("{:?}", address);
-    println!("[VRF DEBUG] {}: {}", label, address_hex);
-}
+// /// Debug helper function to print an address with a label
+// #[cfg(debug_assertions)]
+// fn debug_print_address(label: &str, address: Address) {
+//     let address_hex = format!("{:?}", address);
+//     println!("[VRF DEBUG] {}: {}", label, address_hex);
+// }
 
-/// Debug helper function to print multiple addresses
-#[cfg(debug_assertions)]
-fn debug_print_addresses(
-    vrf_wrapper: Address,
-    owner: Address,
-    erc20_token: Address,
-) {
-    debug_print_address("VRF Wrapper Address", vrf_wrapper);
-    debug_print_address("Owner Address", owner);
-    debug_print_address("ERC20 Token Address", erc20_token);
-}
+// /// Debug helper function to print multiple addresses
+// #[cfg(debug_assertions)]
+// fn debug_print_addresses(
+//     vrf_wrapper: Address,
+//     owner: Address,
+//     erc20_token: Address,
+// ) {
+//     debug_print_address("VRF Wrapper Address", vrf_wrapper);
+//     debug_print_address("Owner Address", owner);
+//     debug_print_address("ERC20 Token Address", erc20_token);
+// }
 
 fn get_extra_args_for_native_payment() -> Bytes {
     // Encode extra args according to VRFV2PlusClient._argsToBytes()
