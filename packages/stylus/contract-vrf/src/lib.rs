@@ -36,6 +36,7 @@ use openzeppelin_stylus::access::ownable::{self, Ownable};
 sol_storage! {
     #[entrypoint]
     pub struct VrfConsumer {
+        // VRF variables
         address i_vrf_v2_plus_wrapper;
         mapping(uint256 => uint256) s_requests_paid; // store the amount paid for request random words
         mapping(uint256 => uint256) s_requests_value; // store random word returned
@@ -47,7 +48,16 @@ sol_storage! {
         uint32 num_words;
         Ownable ownable;
         bool withdrawing;
+
+        // Event variables
+        bool event_started; // flag for "EventStarted"
+        uint256 last_request_timestamp; // block timestamp for the last time request_random_words was called
+
+        // Token distribution variables
         address erc20_token_address; // ERC20 token address for token distribution
+        mapping(string => uint256) user_stakes; // user address (as string) : staked amount (no decimals)
+        string[] user_addresses; // user addresses preserved for order
+        uint256 total_staked; // sum of total staked amounts
     }
 }
 
@@ -216,6 +226,10 @@ impl VrfConsumer {
         self.request_ids.push(request_id);
         self.last_request_id.set(request_id);
 
+        // Check against the last request timestamp
+        let block_timestamp = U256::from(self.vm().block_timestamp());
+        self.last_request_timestamp.set(block_timestamp);
+
         // Emit event
         log(
             self.vm(),
@@ -292,6 +306,7 @@ impl VrfConsumer {
         );
 
         Ok(())
+        // TODO: implement the distribution of ERC20 tokens based on the random words; pass user addss and number
     }
 
     /// External function called by VRF wrapper to fulfill randomness
@@ -336,13 +351,40 @@ impl VrfConsumer {
         self.ownable.only_owner()?;
     
         if self.withdrawing.get() {
-            return Err("Re-entrancy attempt".into());
+            return Err("Only one withdrawal at a time".into());
         }
         self.withdrawing.set(true);
 
         // Transfer the amount
         self.vm()
             .call(&Call::new().value(amount), self.ownable.owner(), &[])?;
+
+        self.withdrawing.set(false);
+
+        Ok(())
+    }
+
+    /// Withdraw ERC20 tokens
+    pub fn withdraw_erc20(&mut self, amount: U256) -> Result<(), Vec<u8>> {
+        self.ownable.only_owner()?;
+    
+        if self.withdrawing.get() {
+            return Err("Only one withdrawal at a time".into());
+        }
+        self.withdrawing.set(true);
+
+        let token_address = self.erc20_token_address.get();
+        
+        if token_address == Address::ZERO {
+            self.withdrawing.set(false);
+            return Err("ERC20 token not set".into());
+        }
+
+        let erc20 = IERC20::new(token_address);
+        let owner = self.ownable.owner();
+        
+        // Transfer ERC20 tokens from contract to owner
+        erc20.transfer(&mut *self, owner, amount)?;
 
         self.withdrawing.set(false);
 
@@ -380,6 +422,46 @@ impl VrfConsumer {
         self.ownable.only_owner()?;
         self.erc20_token_address.set(token_address);
         Ok(())
+    }
+
+    /// Get the event started flag
+    pub fn event_started(&self) -> bool {
+        self.event_started.get()
+    }
+
+    /// Set the event started flag (internal)
+    fn set_event_started(&mut self, started: bool) -> Result<(), Error> {
+        self.event_started.set(started);
+        Ok(())
+    }
+
+    /// Get the last request timestamp
+    pub fn last_request_timestamp(&self) -> U256 {
+        self.last_request_timestamp.get()
+    }
+
+    /// Get the staked amount for a user address (as string)
+    pub fn get_user_stake(&self, user_address: String) -> U256 {
+        self.user_stakes.get(user_address)
+    }
+
+    /// Get the total number of user addresses
+    pub fn get_user_addresses_count(&self) -> U256 {
+        U256::from(self.user_addresses.len())
+    }
+
+    /// Get a user address by index
+    pub fn get_user_address(&self, index: U256) -> Result<String, Vec<u8>> {
+        let idx: usize = index.try_into().map_err(|_| "Index out of bounds".as_bytes().to_vec())?;
+        if idx >= self.user_addresses.len() {
+            return Err("Index out of bounds".into());
+        }
+        Ok(self.user_addresses.get(idx).cloned().unwrap_or_default())
+    }
+
+    /// Get the total staked amount
+    pub fn total_staked(&self) -> U256 {
+        self.total_staked.get()
     }
 
     /// Receive function equivalent - handles incoming ETH
