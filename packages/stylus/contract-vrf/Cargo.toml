@@ -30,9 +30,9 @@ crate-type = ["lib", "cdylib"]
 [profile.release]
 codegen-units = 1
 strip = true
-lto = "fat"
+lto = true
 panic = "abort"
-# Use "z" for maximum size optimization (smallest binary)
-opt-level = "z"
-# Additional size optimizations
-incremental = false
+
+# If you need to reduce the binary size, it is advisable to try other
+# optimization levels, such as "s" and "z"
+opt-level = 3
