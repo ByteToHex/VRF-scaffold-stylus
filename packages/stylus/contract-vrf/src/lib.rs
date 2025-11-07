@@ -246,11 +246,11 @@ impl VrfConsumer {
     }
 
     /// Internal function to distribute ERC20 tokens
-    fn distribute_tokens(
+    fn mint_distribution_reward(
         &mut self,
         recipient: Address,
         amount: U256,
-    ) -> Result<bool, Vec<u8>> {
+    ) -> Result<(), Vec<u8>> {
         let token_address = self.erc20_token_address.get();
         
         if token_address == Address::ZERO {
@@ -258,7 +258,8 @@ impl VrfConsumer {
         }
         
         let erc20 = IERC20::new(token_address);
-        erc20.transfer(&mut *self, recipient, amount)
+        erc20.mint(&mut *self, recipient, amount)?;
+        Ok(())
     }
 
     /// Internal function to fulfill random words
