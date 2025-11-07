@@ -21,7 +21,7 @@ use stylus_sdk::{
     alloy_primitives::{Address, Bytes, U16, U256, U32},
     alloy_sol_types::sol,
     prelude::*,
-    stylus_core::calls::context::Call,
+    // stylus_core::calls::context::Call,
     stylus_core::log,
 };
 
@@ -381,50 +381,50 @@ impl VrfConsumer {
         self.last_request_id.get()
     }
 
-    /// Withdraw native tokens
-    pub fn withdraw_native(&mut self, amount: U256) -> Result<(), Vec<u8>> {
-        self.ownable.only_owner()?;
+    // /// Withdraw native tokens
+    // pub fn withdraw_native(&mut self, amount: U256) -> Result<(), Vec<u8>> {
+    //     self.ownable.only_owner()?;
     
-        if self.withdrawing.get() {
-            return Err(b"Withdrawal in progress".to_vec());
-        }
-        self.withdrawing.set(true);
+    //     if self.withdrawing.get() {
+    //         return Err(b"Withdrawal in progress".to_vec());
+    //     }
+    //     self.withdrawing.set(true);
 
-        // Transfer the amount
-        self.vm()
-            .call(&Call::new().value(amount), self.ownable.owner(), &[])?;
+    //     // Transfer the amount
+    //     self.vm()
+    //         .call(&Call::new().value(amount), self.ownable.owner(), &[])?;
 
-        self.withdrawing.set(false);
+    //     self.withdrawing.set(false);
 
-        Ok(())
-    }
+    //     Ok(())
+    // }
 
-    /// Withdraw ERC20 tokens
-    pub fn withdraw_erc20(&mut self, amount: U256) -> Result<(), Vec<u8>> {
-        self.ownable.only_owner()?;
+    // /// Withdraw ERC20 tokens
+    // pub fn withdraw_erc20(&mut self, amount: U256) -> Result<(), Vec<u8>> {
+    //     self.ownable.only_owner()?;
     
-        if self.withdrawing.get() {
-            return Err(b"Withdrawal in progress".to_vec());
-        }
-        self.withdrawing.set(true);
+    //     if self.withdrawing.get() {
+    //         return Err(b"Withdrawal in progress".to_vec());
+    //     }
+    //     self.withdrawing.set(true);
 
-        let token_address = self.erc20_token_address.get();
+    //     let token_address = self.erc20_token_address.get();
         
-        if token_address == Address::ZERO {
-            self.withdrawing.set(false);
-            return Err(b"Token not set".to_vec());
-        }
+    //     if token_address == Address::ZERO {
+    //         self.withdrawing.set(false);
+    //         return Err(b"Token not set".to_vec());
+    //     }
 
-        let erc20 = IERC20::new(token_address);
-        let owner = self.ownable.owner();
+    //     let erc20 = IERC20::new(token_address);
+    //     let owner = self.ownable.owner();
         
-        // Transfer ERC20 tokens from contract to owner
-        erc20.transfer(&mut *self, owner, amount)?;
+    //     // Transfer ERC20 tokens from contract to owner
+    //     erc20.transfer(&mut *self, owner, amount)?;
 
-        self.withdrawing.set(false);
+    //     self.withdrawing.set(false);
 
-        Ok(())
-    }
+    //     Ok(())
+    // }
 
     pub fn owner(&self) -> Address {
         self.ownable.owner()
