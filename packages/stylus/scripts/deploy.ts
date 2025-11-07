@@ -88,12 +88,12 @@ export default async function deployScript(deployOptions: DeployOptions) {
       "BLSToken",
     );
 
-    // Simulate and execute set_authorized_minter
+    // Simulate and execute setAuthorizedMinter
     const { request } = await publicClient.simulateContract({
       account,
       address: erc20TokenAddress as `0x${string}`,
       abi: erc20ContractData.abi as Abi,
-      functionName: "set_authorized_minter",
+      functionName: "setAuthorizedMinter",
       args: [vrfContractAddress],
     });
 

@@ -15,7 +15,7 @@ use openzeppelin_stylus::{
 use stylus_sdk::{
     alloy_primitives::{aliases::B32, uint, Address, U256, U8},
     prelude::*,
-    storage::StorageAddress,
+    storage::{StorageAddress, StorageBool},
 };
 
 const DECIMALS: U8 = uint!(10_U8);
@@ -32,6 +32,7 @@ enum Error {
     InvalidApprover(erc20::ERC20InvalidApprover),
     UnauthorizedAccount(ownable::OwnableUnauthorizedAccount),
     InvalidOwner(ownable::OwnableInvalidOwner),
+    ReentrancyGuard,
 }
 
 impl From<capped::Error> for Error {
@@ -73,6 +74,7 @@ struct Erc20Token {
     capped: Capped,
     ownable: Ownable,
     authorized_minter: StorageAddress,
+    minting: StorageBool,
 }
 
 #[public]
@@ -97,12 +99,19 @@ impl Erc20Token {
     // [`Erc20::_update`] to mint tokens -- it will the break `Capped`
     // mechanism.
     pub fn mint(&mut self, account: Address, value: U256) -> Result<(), Error> {
+        // Re-entrancy guard
+        if self.minting.get() {
+            return Err(Error::ReentrancyGuard);
+        }
+        self.minting.set(true);
+
         // Allow either owner or authorized minter to mint
         let caller = self.vm().msg_sender();
         let owner = self.ownable.owner();
         let authorized = self.authorized_minter.get();
         
         if caller != owner && (authorized == Address::ZERO || caller != authorized) {
+            self.minting.set(false);
             return Err(ownable::Error::UnauthorizedAccount(ownable::OwnableUnauthorizedAccount {
                 account: caller,
             }))?;
@@ -118,13 +127,16 @@ impl Erc20Token {
             .expect("new supply should not exceed `U256::MAX`");
 
         if supply > max_supply {
+            self.minting.set(false);
             return Err(capped::Error::ExceededCap(capped::ERC20ExceededCap {
                 increased_supply: supply,
                 cap: max_supply,
             }))?;
         }
 
-        self.erc20._mint(account, value)?;
+        let result = self.erc20._mint(account, value);
+        self.minting.set(false);
+        result?;
         Ok(())
     }
 
