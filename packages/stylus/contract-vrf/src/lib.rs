@@ -32,15 +32,22 @@ use stylus_sdk::call::Call as OldCall;
 /// Import OpenZeppelin Ownable functionality
 use openzeppelin_stylus::access::ownable::{self, Ownable};
 
+// Define the request data struct to pack related fields together
+sol! {
+    struct RequestData {
+        uint256 paid;
+        uint256 value;
+        bool fulfilled;
+    }
+}
+
 // Define persistent storage using the Solidity ABI.
 sol_storage! {
     #[entrypoint]
     pub struct VrfConsumer {
         // VRF variables
         address i_vrf_v2_plus_wrapper;
-        mapping(uint256 => uint256) s_requests_paid;
-        mapping(uint256 => uint256) s_requests_value;
-        mapping(uint256 => bool) s_requests_fulfilled;
+        mapping(uint256 => RequestData) s_requests;
         uint256[] request_ids;
         uint256 last_request_id;
 
@@ -211,8 +218,12 @@ impl VrfConsumer {
             num_words,
         )?;
     
-        self.s_requests_fulfilled.insert(request_id, false);
-        self.s_requests_paid.insert(request_id, req_price);
+        // Initialize request data struct
+        self.s_requests.insert(request_id, RequestData {
+            paid: req_price,
+            value: U256::ZERO,
+            fulfilled: false,
+        });
     
         self.request_ids.push(request_id);
         self.last_request_id.set(request_id);
@@ -302,16 +313,18 @@ impl VrfConsumer {
         request_id: U256,
         random_words: Vec<U256>,
     ) -> Result<(), Error> {
-        let paid_amount = self.s_requests_paid.get(request_id);
+        let mut request_data = self.s_requests.get(request_id);
     
-        if paid_amount == U256::ZERO {
+        if request_data.paid == U256::ZERO {
             panic!("Request not found");
         }
-        self.s_requests_fulfilled.insert(request_id, true);
-    
+        
+        request_data.fulfilled = true;
         if !random_words.is_empty() {
-            self.s_requests_value.insert(request_id, random_words[0]);
+            request_data.value = random_words[0];
         }
+        
+        self.s_requests.insert(request_id, request_data);
     
         self.accepting_participants.set(false);
     
@@ -325,7 +338,7 @@ impl VrfConsumer {
             RequestFulfilled {
                 requestId: request_id,
                 randomWords: random_words.clone(),
-                payment: paid_amount,
+                payment: request_data.paid,
                 winner: winner_address,
             },
         );
@@ -353,16 +366,13 @@ impl VrfConsumer {
 
     /// Get the status of a randomness request
     pub fn get_request_status(&self, request_id: U256) -> Result<(U256, bool, U256), Vec<u8>> {
-        let paid = self.s_requests_paid.get(request_id);
+        let request_data = self.s_requests.get(request_id);
 
-        if paid == U256::ZERO {
+        if request_data.paid == U256::ZERO {
             panic!("Request not found");
         }
 
-        let fulfilled = self.s_requests_fulfilled.get(request_id);
-        let random_word = self.s_requests_value.get(request_id);
-
-        Ok((paid, fulfilled, random_word))
+        Ok((request_data.paid, request_data.fulfilled, request_data.value))
     }
 
     /// Get the last request ID
@@ -486,7 +496,6 @@ impl VrfConsumer {
         if self.participants.contains(&self.vm().msg_sender()) {
             return Err(b"Already participating".to_vec());
         }
-
         // Get the required entry fee
         let entry_fee = self.lottery_entry_fee.get();
         
