@@ -208,10 +208,13 @@ impl VrfConsumer {
     }
 
     pub fn request_random_words(&mut self) -> Result<U256, Vec<u8>> {
+        if self.event_started.get() { // check if the event has already started
+            return Err(b"Event already started".to_vec());
+        }
         let block_timestamp = U256::from(self.vm().block_timestamp());
         let last_timestamp = self.last_request_timestamp.get();
         let one_hour = U256::from(3600);
-        if block_timestamp < last_timestamp + one_hour {
+        if block_timestamp < last_timestamp + one_hour { // check if the event has already started within the last hour
             return Err(b"Raffle can only be performed once every hour".to_vec());
         }
     
@@ -305,6 +308,7 @@ impl VrfConsumer {
                 payment: paid_amount,
             },
         );
+        self.event_started.set(true);
 
         Ok(())
         // TODO: implement the distribution of ERC20 tokens based on the random words; pass user addss and number
@@ -450,7 +454,7 @@ impl VrfConsumer {
         if idx >= self.user_addresses.len() {
             return Err("Index out of bounds".into());
         }
-        Ok(self.user_addresses.get(idx).cloned().unwrap_or_default())
+        Ok(self.user_addresses.get(idx).map(|s| s.to_string()).unwrap_or_default())
     }
 
     pub fn total_staked(&self) -> U256 {
