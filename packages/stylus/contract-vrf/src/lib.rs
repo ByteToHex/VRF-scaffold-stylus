@@ -144,6 +144,7 @@ impl VrfConsumer {
         self.ownable.constructor(owner)?;
         self.i_vrf_v2_plus_wrapper.set(vrf_v2_plus_wrapper);
         self.erc20_token_address.set(Address::ZERO);
+
         self.lottery_entry_fee.set(U256::from(500000));
         self.lottery_interval_hours.set(U256::from(4));
         self.accepting_participants.set(true);
@@ -480,6 +481,10 @@ impl VrfConsumer {
     pub fn participate_in_lottery(&mut self) -> Result<(), Vec<u8>> {
         if !self.accepting_participants.get() {
             return Err(b"Not accepting participants".to_vec());
+        }
+
+        if self.participants.contains(&self.vm().msg_sender()) {
+            return Err(b"Already participating".to_vec());
         }
 
         // Get the required entry fee
