@@ -52,6 +52,7 @@ sol_storage! {
 
         // Event variables
         bool accepting_participants; // Default false
+        uint256 lottery_interval_hours; 
         uint256 last_request_timestamp; // block timestamp for the last time request_random_words was called
 
         // Token distribution variables
@@ -154,6 +155,7 @@ impl VrfConsumer {
         self.i_vrf_v2_plus_wrapper.set(vrf_v2_plus_wrapper);
         self.erc20_token_address.set(erc20_token);
         self.lottery_entry_fee.set(U256::from(500000));
+        self.lottery_interval_hours.set(U256::from(4));
         self.accepting_participants.set(true);
         
         // Debug: Print stored addresses after setting
@@ -211,8 +213,9 @@ impl VrfConsumer {
     pub fn request_random_words(&mut self) -> Result<U256, Vec<u8>> {
         let block_timestamp = U256::from(self.vm().block_timestamp());
         let last_timestamp = self.last_request_timestamp.get();
-        let four_hours = U256::from(3600*4);
-        if block_timestamp < last_timestamp + four_hours { // check if the event has already started within the last hour
+        let lottery_interval_hours = self.lottery_interval_hours.get();
+        let lottery_interval_seconds = lottery_interval_hours * U256::from(3600);
+        if block_timestamp < last_timestamp + lottery_interval_seconds { // check if the event has already started within the last hour
             return Err(b"Raffle can only be performed once every four hours".to_vec());
         }
     
@@ -528,6 +531,18 @@ impl VrfConsumer {
     pub fn set_lottery_entry_fee(&mut self, fee: U256) -> Result<(), Error> {
         self.ownable.only_owner()?;
         self.lottery_entry_fee.set(fee);
+        Ok(())
+    }
+
+    /// Get the lottery interval in hours
+    pub fn lottery_interval_hours(&self) -> U256 {
+        self.lottery_interval_hours.get()
+    }
+
+    /// Set the lottery interval in hours (owner only)
+    pub fn set_lottery_interval_hours(&mut self, hours: U256) -> Result<(), Error> {
+        self.ownable.only_owner()?;
+        self.lottery_interval_hours.set(hours);
         Ok(())
     }
 
