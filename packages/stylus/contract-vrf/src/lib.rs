@@ -51,8 +51,9 @@ sol_storage! {
         bool withdrawing;
 
         // Event variables
-        bool event_started; // flag for "EventStarted"
+        bool event_started; // Default false
         uint256 last_request_timestamp; // block timestamp for the last time request_random_words was called
+        uint256[] last_random_words; 
 
         // Token distribution variables
         address erc20_token_address; // ERC20 token address for token distribution
@@ -263,7 +264,7 @@ impl VrfConsumer {
         Ok(price)
     }
 
-    /// Internal function to distribute ERC20 tokens
+    /// Internal function to distribute ERC20 tokens; TODO: implement
     fn mint_distribution_reward(
         &mut self,
         recipient: Address,
@@ -301,13 +302,20 @@ impl VrfConsumer {
 
         // Emit event
         log(
-            self.vm(), // emit the event in the current contract’s execution context
+            self.vm(), // emit the event in the current contract's execution context
             RequestFulfilled {
                 requestId: request_id,
-                randomWords: random_words,
+                randomWords: random_words.clone(),
                 payment: paid_amount,
             },
         );
+        // Clear existing storage vector and push new random words
+        while !self.last_random_words.is_empty() {
+            self.last_random_words.pop();
+        }
+        for word in &random_words {
+            self.last_random_words.push(*word);
+        }
         self.event_started.set(true);
 
         Ok(())
