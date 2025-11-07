@@ -66,7 +66,7 @@ impl From<ownable::Error> for Error {
 
 #[entrypoint]
 #[storage]
-struct Erc20Example {
+struct Erc20Token {
     erc20: Erc20,
     metadata: Erc20Metadata,
     capped: Capped,
@@ -74,7 +74,7 @@ struct Erc20Example {
 }
 
 #[public]
-impl Erc20Example {
+impl Erc20Token {
     #[constructor]
     pub fn constructor(
         &mut self,
