@@ -32,14 +32,7 @@ use stylus_sdk::call::Call as OldCall;
 /// Import OpenZeppelin Ownable functionality
 use openzeppelin_stylus::access::ownable::{self, Ownable};
 
-// Define the request data struct to pack related fields together
-sol! {
-    struct RequestData {
-        uint256 paid;
-        uint256 value;
-        bool fulfilled;
-    }
-}
+// RequestData struct removed - we only store last fulfilled request now
 
 // Define persistent storage using the Solidity ABI.
 sol_storage! {
@@ -47,9 +40,8 @@ sol_storage! {
     pub struct VrfConsumer {
         // VRF variables
         address i_vrf_v2_plus_wrapper;
-        mapping(uint256 => RequestData) s_requests;
-        uint256[] request_ids;
-        uint256 last_request_id;
+        uint256 last_fulfilled_id;
+        uint256 last_fulfilled_value;
 
         // 🔧 changed: smaller ints -> uint256 to match 32-byte slot
         uint256 callback_gas_limit;
@@ -112,8 +104,8 @@ sol_interface! {
 
 // Define events
 sol! {
-    event RequestSent(uint256 indexed requestId, uint32 numWords);
-    event RequestFulfilled(uint256 indexed requestId, uint256[] randomWords, uint256 payment, address winner);
+    event RequestSent(uint256 indexed requestId, uint32 numWords, uint256 payment);
+    event RequestFulfilled(uint256 indexed requestId, uint256[] randomWords, address winner);
     event Received(address indexed sender, uint256 value);
 }
 
@@ -217,16 +209,7 @@ impl VrfConsumer {
             request_confirmations,
             num_words,
         )?;
-    
-        // Initialize request data struct
-        self.s_requests.insert(request_id, RequestData {
-            paid: req_price,
-            value: U256::ZERO,
-            fulfilled: false,
-        });
-    
-        self.request_ids.push(request_id);
-        self.last_request_id.set(request_id);
+
         self.last_request_timestamp.set(block_timestamp);
     
         log(
@@ -234,6 +217,7 @@ impl VrfConsumer {
             RequestSent {
                 requestId: request_id,
                 numWords: num_words,
+                payment: req_price,
             },
         );
     
@@ -313,18 +297,15 @@ impl VrfConsumer {
         request_id: U256,
         random_words: Vec<U256>,
     ) -> Result<(), Error> {
-        let mut request_data = self.s_requests.get(request_id);
-    
-        if request_data.paid == U256::ZERO {
-            panic!("Request not found");
-        }
+        // Store only the last fulfilled request
+        let fulfilled_value = if !random_words.is_empty() {
+            random_words[0]
+        } else {
+            U256::ZERO
+        };
         
-        request_data.fulfilled = true;
-        if !random_words.is_empty() {
-            request_data.value = random_words[0];
-        }
-        
-        self.s_requests.insert(request_id, request_data);
+        self.last_fulfilled_id.set(request_id);
+        self.last_fulfilled_value.set(fulfilled_value);
     
         self.accepting_participants.set(false);
     
@@ -338,7 +319,6 @@ impl VrfConsumer {
             RequestFulfilled {
                 requestId: request_id,
                 randomWords: random_words.clone(),
-                payment: request_data.paid,
                 winner: winner_address,
             },
         );
@@ -363,21 +343,14 @@ impl VrfConsumer {
 
         self.fulfill_random_words(request_id, random_words)
     }
-
-    /// Get the status of a randomness request
-    pub fn get_request_status(&self, request_id: U256) -> Result<(U256, bool, U256), Vec<u8>> {
-        let request_data = self.s_requests.get(request_id);
-
-        if request_data.paid == U256::ZERO {
-            panic!("Request not found");
-        }
-
-        Ok((request_data.paid, request_data.fulfilled, request_data.value))
+    /// Get the last fulfilled request ID
+    pub fn get_last_fulfilled_id(&self) -> U256 {
+        self.last_fulfilled_id.get()
     }
 
-    /// Get the last request ID
-    pub fn get_last_request_id(&self) -> U256 {
-        self.last_request_id.get()
+    /// Get the last fulfilled request value
+    pub fn get_last_fulfilled_value(&self) -> U256 {
+        self.last_fulfilled_value.get()
     }
 
     /// Withdraw tokens (native or ERC20) If token_address is Address::ZERO, withdraws native tokens
@@ -426,6 +399,10 @@ impl VrfConsumer {
         self.withdraw(amount, token_address)
     }
 
+    pub fn last_request_timestamp(&self) -> U256 {
+        self.last_request_timestamp.get()
+    }
+
     pub fn owner(&self) -> Address {
         self.ownable.owner()
     }
@@ -433,14 +410,6 @@ impl VrfConsumer {
     // Getter functions for configuration
     pub fn callback_gas_limit(&self) -> u32 {
         self.callback_gas_limit.get().try_into().unwrap_or(100000)
-    }
-    
-    pub fn request_confirmations(&self) -> u16 {
-        self.request_confirmations.get().try_into().unwrap_or(3)
-    }
-    
-    pub fn num_words(&self) -> u32 {
-        self.num_words.get().try_into().unwrap_or(1)
     }
 
     pub fn i_vrf_v2_plus_wrapper(&self) -> Address {
@@ -467,10 +436,6 @@ impl VrfConsumer {
     //     Ok(())
     // }
 
-    pub fn last_request_timestamp(&self) -> U256 {
-        self.last_request_timestamp.get()
-    }
-
     pub fn get_user_addresses_count(&self) -> U256 {
         U256::from(self.participants.len())
     }
@@ -493,8 +458,12 @@ impl VrfConsumer {
             return Err(b"Not accepting participants".to_vec());
         }
 
-        if self.participants.contains(&self.vm().msg_sender()) {
-            return Err(b"Already participating".to_vec());
+        // Check if participant already exists by iterating through the list
+        let msg_sender = self.vm().msg_sender();
+        for i in 0..self.participants.len() {
+                if self.participants.get(i) == Some(msg_sender) {
+                    return Err(b"Already participating".to_vec());
+                }
         }
         // Get the required entry fee
         let entry_fee = self.lottery_entry_fee.get();
