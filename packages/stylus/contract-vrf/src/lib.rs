@@ -136,8 +136,7 @@ impl VrfConsumer {
     pub fn constructor(
         &mut self,
         vrf_v2_plus_wrapper: Address,
-        owner: Address,
-        erc20_token: Address,
+        owner: Address
     ) -> Result<(), Error> {
         
         // #[cfg(debug_assertions)] // Debug: Print addresses received in constructor
@@ -147,7 +146,7 @@ impl VrfConsumer {
         
         self.ownable.constructor(owner)?;
         self.i_vrf_v2_plus_wrapper.set(vrf_v2_plus_wrapper);
-        self.erc20_token_address.set(erc20_token);
+        self.erc20_token_address.set(Address::ZERO);
         self.lottery_entry_fee.set(U256::from(500000));
         self.lottery_interval_hours.set(U256::from(4));
         self.accepting_participants.set(true);

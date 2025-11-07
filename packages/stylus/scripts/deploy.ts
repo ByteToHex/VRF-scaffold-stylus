@@ -30,23 +30,6 @@ export default async function deployScript(deployOptions: DeployOptions) {
   }
   console.log(`🔑 Using private key: ${config.privateKey.substring(0, 10)}...`);
   console.log(`📁 Deployment directory: ${config.deploymentDir}`);
-  console.log(`\n`);
-
-  // Deploy ERC20 contract first and capture its address
-  const erc20Deployment = await deployStylusContract({
-    contract: "contract-erc20",
-    name: "BLSToken",
-    constructorArgs: ["Blessing", "BLS", "1000000000000000000000000", config.deployerAddress!],
-    ...deployOptions,
-  });
-
-  if (!erc20Deployment) {
-    throw new Error("Failed to deploy ERC20 contract");
-  }
-
-  const erc20TokenAddress = erc20Deployment.address;
-  console.log(`\nERC20 Token deployed at: ${erc20TokenAddress}`);
-  console.log(`Passing address to VRF contract...\n`);
 
   // Get network-specific VRF wrapper address
   const { getVrfWrapperAddress } = await import("./utils/network");
@@ -54,7 +37,6 @@ export default async function deployScript(deployOptions: DeployOptions) {
   
   console.log(`📋 Using VRF Wrapper Address: ${vrfWrapperAddress}`);
   console.log(`📋 Using Owner Address: ${config.deployerAddress}`);
-  console.log(`📋 Using ERC20 Token Address: ${erc20TokenAddress}`);
   
   // Validate addresses before deployment
   if (!config.deployerAddress || config.deployerAddress === "0x0000000000000000000000000000000000000000") {
@@ -69,10 +51,7 @@ export default async function deployScript(deployOptions: DeployOptions) {
     console.warn(`   2. Set VRF_WRAPPER_ADDRESS environment variable for any network`);
     console.warn(`   3. Use Arbitrum Sepolia network (--network sepolia) which has a valid VRF wrapper`);
   }
-  
-  if (erc20TokenAddress === "0x0000000000000000000000000000000000000000") {
-    throw new Error("❌ ERC20 token address is zero. ERC20 deployment must have succeeded.");
-  }
+  console.log(`\n`);
 
   // Deploy VRF contract with ERC20 token address
   const vrfDeployment = await deployStylusContract({
@@ -81,18 +60,32 @@ export default async function deployScript(deployOptions: DeployOptions) {
     constructorArgs: [
       vrfWrapperAddress, // Network-specific VRF V2+ Wrapper address
       config.deployerAddress!,
-      erc20TokenAddress, // Pass the deployed ERC20 token address
     ],
     ...deployOptions,
   });
 
-  if (!vrfDeployment) {
-    throw new Error("Failed to deploy VRF contract");
+  if (!vrfDeployment || vrfDeployment.address === "0x0000000000000000000000000000000000000000") {
+    throw new Error("VRF deployment must have failed.");
   }
 
-  const vrfContractAddress = vrfDeployment.address;
-  console.log(`\nVRF Contract deployed at: ${vrfContractAddress}`);
-  console.log(`🔐 Setting VRF contract as authorized minter for ERC20 token...\n`);
+    // Deploy ERC20 contract first and capture its address
+  const erc20Deployment = await deployStylusContract({
+    contract: "contract-erc20",
+    name: "BLSToken",
+    constructorArgs: ["Blessing", "BLS", "1000000000000000000000000", config.deployerAddress!],
+    ...deployOptions,
+  });
+
+  if (!erc20Deployment) {
+    throw new Error("Failed to deploy ERC20 contract");
+  }
+
+  
+  if (!erc20Deployment || erc20Deployment.address === "0x0000000000000000000000000000000000000000") {
+    throw new Error("ERC20 deployment must have failed.");
+  }
+  console.log(`\nERC20 Token deployed at: ${erc20Deployment.address}`, `VRF Contract deployed at: ${vrfDeployment.address}`);
+  console.log(`\n Setting VRF contract as authorized minter for ERC20 token...\n`);
 
   // Set the VRF contract as authorized minter for the ERC20 token
   try {
@@ -117,20 +110,64 @@ export default async function deployScript(deployOptions: DeployOptions) {
     // Simulate and execute setAuthorizedMinter
     const { request } = await publicClient.simulateContract({
       account,
-      address: erc20TokenAddress as `0x${string}`,
+      address: erc20Deployment.address as `0x${string}`,
       abi: erc20ContractData.abi as Abi,
       functionName: "setAuthorizedMinter",
-      args: [vrfContractAddress],
+      args: [vrfDeployment.address],
     });
 
     const txHash = await walletClient.writeContract(request);
-    console.log(`Authorized minter set to ${vrfContractAddress}. Txn hash: ${txHash}`);
+    console.log(`Authorized minter set to ${vrfDeployment.address}. Txn hash: ${txHash}`);
     
     // Wait for transaction confirmation
     await publicClient.waitForTransactionReceipt({ hash: txHash });
     console.log(`Transaction confirmed!`);
   } catch (error) {
     console.error(`Failed to set authorized minter: ${error}`);
+    if (error instanceof Error) {
+      console.error(error.message);
+    }
+    throw error;
+  }
+
+  // Set the ERC20 token address on the VRF contract
+  console.log(`\n Setting ERC20 token address on VRF contract...\n`);
+  try {
+    const publicClient = createPublicClient({
+      chain: config.chain,
+      transport: http(getRpcUrlFromChain(config.chain)),
+    });
+
+    const walletClient = createWalletClient({
+      chain: config.chain,
+      transport: http(getRpcUrlFromChain(config.chain)),
+    });
+
+    const account = privateKeyToAccount(config.privateKey as `0x${string}`);
+
+    // Get VRF contract ABI
+    const vrfContractData = getContractData(
+      config.chain.id.toString(),
+      "vrf-consumer",
+    );
+
+    // Simulate and execute set_erc20_token
+    const { request } = await publicClient.simulateContract({
+      account,
+      address: vrfDeployment.address as `0x${string}`,
+      abi: vrfContractData.abi as Abi,
+      functionName: "set_erc20_token",
+      args: [erc20Deployment.address],
+    });
+
+    const txHash = await walletClient.writeContract(request);
+    console.log(`ERC20 token address set to ${erc20Deployment.address}. Txn hash: ${txHash}`);
+    
+    // Wait for transaction confirmation
+    await publicClient.waitForTransactionReceipt({ hash: txHash });
+    console.log(`Transaction confirmed!`);
+  } catch (error) {
+    console.error(`Failed to set ERC20 token address: ${error}`);
     if (error instanceof Error) {
       console.error(error.message);
     }
