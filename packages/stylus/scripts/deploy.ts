@@ -51,7 +51,6 @@ export default async function deployScript(deployOptions: DeployOptions) {
     console.warn(`   2. Set VRF_WRAPPER_ADDRESS environment variable for any network`);
     console.warn(`   3. Use Arbitrum Sepolia network (--network sepolia) which has a valid VRF wrapper`);
   }
-  console.log(`\n`);
 
   // Deploy VRF contract with ERC20 token address
   const vrfDeployment = await deployStylusContract({
@@ -80,7 +79,6 @@ export default async function deployScript(deployOptions: DeployOptions) {
     throw new Error("Failed to deploy ERC20 contract");
   }
 
-  
   if (!erc20Deployment || erc20Deployment.address === "0x0000000000000000000000000000000000000000") {
     throw new Error("ERC20 deployment must have failed.");
   }
@@ -111,8 +109,7 @@ export default async function deployScript(deployOptions: DeployOptions) {
       chainId: config.chain.id.toString(),
       successMessage: `Authorized minter set to ${vrfDeployment.address}`,
       errorMessage: "Failed to set authorized minter",
-    });
-    
+    });    
     await executeContractFunction({
       contractName: "vrf-consumer",
       contractAddress: vrfDeployment.address,
@@ -125,6 +122,7 @@ export default async function deployScript(deployOptions: DeployOptions) {
       successMessage: `ERC20 token address set to ${erc20Deployment.address}`,
       errorMessage: "Failed to set ERC20 token address",
     });
+
   } catch (error) {
     console.error(`Failed to set contract configurations: ${error}`);
     if (error instanceof Error) {
