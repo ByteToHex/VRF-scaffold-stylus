@@ -47,6 +47,7 @@ sol_storage! {
         uint32 num_words;
         Ownable ownable;
         bool withdrawing;
+        address erc20_token_address; // ERC20 token address for token distribution
     }
 }
 
@@ -60,6 +61,37 @@ sol_interface! {
             uint32 _numWords,
             bytes calldata extraArgs
         ) external payable returns (uint256 requestId);
+    }
+}
+
+// Define ERC20 interface
+sol_interface! {
+    interface IERC20 {
+        // Standard ERC20 functions
+        function totalSupply() external view returns (uint256);
+        function balanceOf(address account) external view returns (uint256);
+        function transfer(address to, uint256 amount) external returns (bool);
+        function allowance(address owner, address spender) external view returns (uint256);
+        function approve(address spender, uint256 amount) external returns (bool);
+        function transferFrom(address from, address to, uint256 amount) external returns (bool);
+        
+        // ERC20 Burnable functions
+        function burn(uint256 value) external;
+        function burnFrom(address account, uint256 value) external;
+        
+        // ERC20 Metadata functions
+        function name() external view returns (string);
+        function symbol() external view returns (string);
+        function decimals() external view returns (uint8);
+        
+        // Capped functions
+        function cap() external view returns (uint256);
+        
+        // ERC165 function
+        function supportsInterface(bytes4 interfaceId) external view returns (bool);
+        
+        // Mint function (owner only, but included for completeness)
+        function mint(address account, uint256 value) external;
     }
 }
 
