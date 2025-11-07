@@ -99,7 +99,9 @@ impl Erc20Token {
     // mechanism.
     pub fn mint(&mut self, account: Address, value: U256) -> Result<(), Error> {
         if self.minting.get() {
-            return Err(Error::ReentrancyGuard(ReentrancyError));
+            return Err(Error::InvalidSender(erc20::ERC20InvalidSender {
+                sender: self.vm().msg_sender(),
+            }));
         }
         self.minting.set(true);
 
