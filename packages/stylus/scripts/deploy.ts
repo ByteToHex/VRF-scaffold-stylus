@@ -33,7 +33,7 @@ export default async function deployScript(deployOptions: DeployOptions) {
   const erc20Deployment = await deployStylusContract({
     contract: "contract-erc20",
     name: "BLSToken",
-    constructorArgs: ["Blessing", "BLS", "1000000000000000000000000"],
+    constructorArgs: ["Blessing", "BLS", "1000000000000000000000000", config.deployerAddress!],
     ...deployOptions,
   });
 
