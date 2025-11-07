@@ -32,7 +32,6 @@ enum Error {
     InvalidApprover(erc20::ERC20InvalidApprover),
     UnauthorizedAccount(ownable::OwnableUnauthorizedAccount),
     InvalidOwner(ownable::OwnableInvalidOwner),
-    ReentrancyGuard,
 }
 
 impl From<capped::Error> for Error {
@@ -99,9 +98,8 @@ impl Erc20Token {
     // [`Erc20::_update`] to mint tokens -- it will the break `Capped`
     // mechanism.
     pub fn mint(&mut self, account: Address, value: U256) -> Result<(), Error> {
-        // Re-entrancy guard
         if self.minting.get() {
-            return Err(Error::ReentrancyGuard);
+            return Err(Error::ReentrancyGuard(ReentrancyError));
         }
         self.minting.set(true);
 
