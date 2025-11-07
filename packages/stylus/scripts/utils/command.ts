@@ -129,6 +129,16 @@ export function executeCommand(
           ) {
             errorOutput += `\nCan not verify contract with constructor arguments.\n`;
           }
+        } else {
+          // If no extracted errors, show the full error output for debugging
+          console.error("\n📋 Full error output:");
+          console.error(errorOutput || "No error output captured");
+        }
+
+        // Also show stdout for additional context
+        if (output && output.trim()) {
+          console.error("\n📋 Standard output:");
+          console.error(output);
         }
 
         reject(
