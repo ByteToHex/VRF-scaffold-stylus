@@ -18,7 +18,7 @@ use alloc::vec::Vec;
 
 /// Import items from the SDK. The prelude contains common traits and macros.
 use stylus_sdk::{
-    alloy_primitives::{Address, Bytes, U256},
+    alloy_primitives::{Address, Bytes, U16, U256, U32},
     alloy_sol_types::sol,
     prelude::*,
     stylus_core::calls::context::Call,

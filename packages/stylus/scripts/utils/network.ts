@@ -251,7 +251,7 @@ export function getVrfWrapperAddress(chain: Chain): Address {
       // For local devnet, use a placeholder address
       // You can deploy a mock VRF wrapper or set VRF_WRAPPER_ADDRESS env var
       return (process.env["VRF_WRAPPER_ADDRESS_DEVNET"] || 
-              "0x0000000000000000000000000000000000000000") as Address;
+              "0x29576aB8152A09b9DC634804e4aDE73dA1f3a3CC") as Address;
     default:
       // For other networks, return zero address as placeholder
       // Users should set VRF_WRAPPER_ADDRESS env var for their network
