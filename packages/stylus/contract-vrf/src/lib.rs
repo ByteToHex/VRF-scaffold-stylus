@@ -15,6 +15,7 @@
 extern crate alloc;
 
 use alloc::vec::Vec;
+use alloc::string::String;
 
 /// Import items from the SDK. The prelude contains common traits and macros.
 use stylus_sdk::{
@@ -206,31 +207,31 @@ impl VrfConsumer {
         Ok((request_id, request_price))
     }
 
-    /// Public function to request random words
     pub fn request_random_words(&mut self) -> Result<U256, Vec<u8>> {
+        let block_timestamp = U256::from(self.vm().block_timestamp());
+        let last_timestamp = self.last_request_timestamp.get();
+        let one_hour = U256::from(3600);
+        if block_timestamp < last_timestamp + one_hour {
+            return Err(b"Raffle can only be performed once every hour".to_vec());
+        }
+    
         let callback_gas_limit = self.callback_gas_limit.get().try_into().unwrap_or(100000);
         let request_confirmations = self.request_confirmations.get().try_into().unwrap_or(3);
         let num_words = self.num_words.get().try_into().unwrap_or(1);
-
+    
         let (request_id, req_price) = self.request_randomness_pay_in_native(
             callback_gas_limit,
             request_confirmations,
             num_words,
         )?;
-
-        // Store request status in separate mappings
+    
         self.s_requests_fulfilled.insert(request_id, false);
         self.s_requests_paid.insert(request_id, req_price);
-
-        // Add to request IDs array and update last request ID
+    
         self.request_ids.push(request_id);
         self.last_request_id.set(request_id);
-
-        // Check against the last request timestamp
-        let block_timestamp = U256::from(self.vm().block_timestamp());
         self.last_request_timestamp.set(block_timestamp);
-
-        // Emit event
+    
         log(
             self.vm(),
             RequestSent {
@@ -238,7 +239,7 @@ impl VrfConsumer {
                 numWords: num_words,
             },
         );
-
+    
         Ok(request_id)
     }
 
@@ -297,7 +298,7 @@ impl VrfConsumer {
 
         // Emit event
         log(
-            self.vm(),
+            self.vm(), // emit the event in the current contract’s execution context
             RequestFulfilled {
                 requestId: request_id,
                 randomWords: random_words,
@@ -412,19 +413,16 @@ impl VrfConsumer {
         self.i_vrf_v2_plus_wrapper.get()
     }
 
-    /// Get the ERC20 token address
     pub fn erc20_token_address(&self) -> Address {
         self.erc20_token_address.get()
     }
 
-    /// Set the ERC20 token address (owner only)
     pub fn set_erc20_token(&mut self, token_address: Address) -> Result<(), Error> {
         self.ownable.only_owner()?;
         self.erc20_token_address.set(token_address);
         Ok(())
     }
 
-    /// Get the event started flag
     pub fn event_started(&self) -> bool {
         self.event_started.get()
     }
@@ -435,22 +433,18 @@ impl VrfConsumer {
         Ok(())
     }
 
-    /// Get the last request timestamp
     pub fn last_request_timestamp(&self) -> U256 {
         self.last_request_timestamp.get()
     }
 
-    /// Get the staked amount for a user address (as string)
     pub fn get_user_stake(&self, user_address: String) -> U256 {
         self.user_stakes.get(user_address)
     }
 
-    /// Get the total number of user addresses
     pub fn get_user_addresses_count(&self) -> U256 {
         U256::from(self.user_addresses.len())
     }
 
-    /// Get a user address by index
     pub fn get_user_address(&self, index: U256) -> Result<String, Vec<u8>> {
         let idx: usize = index.try_into().map_err(|_| "Index out of bounds".as_bytes().to_vec())?;
         if idx >= self.user_addresses.len() {
@@ -459,7 +453,6 @@ impl VrfConsumer {
         Ok(self.user_addresses.get(idx).cloned().unwrap_or_default())
     }
 
-    /// Get the total staked amount
     pub fn total_staked(&self) -> U256 {
         self.total_staked.get()
     }
