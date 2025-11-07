@@ -4,6 +4,7 @@ extern crate alloc;
 use alloc::vec::Vec;
 
 use openzeppelin_stylus::{
+    access::ownable::{self, IOwnable, Ownable},
     token::erc20::{
         self,
         extensions::{capped, Capped, Erc20Metadata, ICapped, IErc20Burnable, IErc20Metadata},
@@ -28,6 +29,8 @@ enum Error {
     InsufficientAllowance(erc20::ERC20InsufficientAllowance),
     InvalidSpender(erc20::ERC20InvalidSpender),
     InvalidApprover(erc20::ERC20InvalidApprover),
+    UnauthorizedAccount(ownable::OwnableUnauthorizedAccount),
+    InvalidOwner(ownable::OwnableInvalidOwner),
 }
 
 impl From<capped::Error> for Error {
@@ -52,20 +55,37 @@ impl From<erc20::Error> for Error {
     }
 }
 
+impl From<ownable::Error> for Error {
+    fn from(value: ownable::Error) -> Self {
+        match value {
+            ownable::Error::UnauthorizedAccount(e) => Error::UnauthorizedAccount(e),
+            ownable::Error::InvalidOwner(e) => Error::InvalidOwner(e),
+        }
+    }
+}
+
 #[entrypoint]
 #[storage]
 struct Erc20Example {
     erc20: Erc20,
     metadata: Erc20Metadata,
     capped: Capped,
+    ownable: Ownable,
 }
 
 #[public]
 impl Erc20Example {
     #[constructor]
-    pub fn constructor(&mut self, name: String, symbol: String, cap: U256) -> Result<(), Error> {
+    pub fn constructor(
+        &mut self,
+        name: String,
+        symbol: String,
+        cap: U256,
+        owner: Address,
+    ) -> Result<(), Error> {
         self.metadata.constructor(name, symbol);
         self.capped.constructor(cap)?;
+        self.ownable.constructor(owner)?;
         Ok(())
     }
 
@@ -75,6 +95,8 @@ impl Erc20Example {
     // [`Erc20::_update`] to mint tokens -- it will the break `Capped`
     // mechanism.
     pub fn mint(&mut self, account: Address, value: U256) -> Result<(), Error> {
+        self.ownable.only_owner()?;
+
         let max_supply = self.capped.cap();
 
         // Overflow check required.
