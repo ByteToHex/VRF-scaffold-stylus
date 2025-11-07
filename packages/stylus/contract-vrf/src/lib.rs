@@ -1,10 +1,10 @@
 //!
-//! DirectFundingConsumer in Stylus Rust
+//! VrfConsumer in Stylus Rust
 //!
 //! A VRF consumer contract that requests randomness from Chainlink VRF V2+ wrapper
 //! using native tokens (ETH) for payment.
 //!
-//! This is the Stylus Rust equivalent of the Solidity DirectFundingConsumer.
+//! This is the Stylus Rust equivalent of the Solidity VrfConsumer.
 //!
 
 // Allow `cargo stylus export-abi` to generate a main function.
@@ -35,7 +35,7 @@ use openzeppelin_stylus::access::ownable::{self, Ownable};
 // Define persistent storage using the Solidity ABI.
 sol_storage! {
     #[entrypoint]
-    pub struct DirectFundingConsumer {
+    pub struct VrfConsumer {
         address i_vrf_v2_plus_wrapper;
         mapping(uint256 => uint256) s_requests_paid; // store the amount paid for request random words
         mapping(uint256 => uint256) s_requests_value; // store random word returned
@@ -91,9 +91,9 @@ impl From<ownable::Error> for Error {
         }
     }
 }
-/// Declare that `DirectFundingConsumer` is a contract with the following external methods.
+/// Declare that `VrfConsumer` is a contract with the following external methods.
 #[public]
-impl DirectFundingConsumer {
+impl VrfConsumer {
     /// Constructor - initializes the contract with VRF wrapper address
     #[constructor]
     pub fn constructor(
