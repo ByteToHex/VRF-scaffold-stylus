@@ -51,9 +51,8 @@ sol_storage! {
         bool withdrawing;
 
         // Event variables
-        bool event_started; // Default false
+        bool accepting_participants; // Default false
         uint256 last_request_timestamp; // block timestamp for the last time request_random_words was called
-        uint256[] last_random_words; 
 
         // Token distribution variables
         address erc20_token_address; // ERC20 token address for token distribution
@@ -154,6 +153,8 @@ impl VrfConsumer {
         self.ownable.constructor(owner)?;
         self.i_vrf_v2_plus_wrapper.set(vrf_v2_plus_wrapper);
         self.erc20_token_address.set(erc20_token);
+        self.lottery_entry_fee.set(U256::from(500000));
+        self.accepting_participants.set(true);
         
         // Debug: Print stored addresses after setting
         #[cfg(debug_assertions)]
@@ -208,14 +209,11 @@ impl VrfConsumer {
     }
 
     pub fn request_random_words(&mut self) -> Result<U256, Vec<u8>> {
-        if self.event_started.get() { // check if the event has already started
-            return Err(b"Event already started".to_vec());
-        }
         let block_timestamp = U256::from(self.vm().block_timestamp());
         let last_timestamp = self.last_request_timestamp.get();
-        let one_hour = U256::from(3600);
-        if block_timestamp < last_timestamp + one_hour { // check if the event has already started within the last hour
-            return Err(b"Raffle can only be performed once every hour".to_vec());
+        let four_hours = U256::from(3600*4);
+        if block_timestamp < last_timestamp + four_hours { // check if the event has already started within the last hour
+            return Err(b"Raffle can only be performed once every four hours".to_vec());
         }
     
         let callback_gas_limit = self.callback_gas_limit.get().try_into().unwrap_or(100000);
@@ -280,6 +278,20 @@ impl VrfConsumer {
         Ok(())
     }
 
+    fn decide_winner(
+        &mut self,
+        random_words: Vec<U256>,
+    ) -> Result<Address, Vec<u8>> {
+        // TODO: implement the distribution of ERC20 tokens based on the random words; pass user addss and number
+        let winner = random_words[0] % self.participants.len();
+        let winner_address = self.participants[winner];
+        if winner_address == U256::ZERO {
+            return Err(b"No winner found".to_vec());
+        }        
+        self.mint_distribution_reward(winner_address, self.participants.len()*self.lottery_entry_fee.get()*0.85)?; // "15% tax"
+        Ok(winner_address)
+    }
+
     /// Internal function to fulfill random words
     fn fulfill_random_words(
         &mut self,
@@ -299,7 +311,8 @@ impl VrfConsumer {
             self.s_requests_value.insert(request_id, random_words[0]);
         }
 
-        // Emit event
+        self.accepting_participants.set(false); // await the random words result, distribute, then accept new participants
+        self.decide_winner(random_words)?;
         log(
             self.vm(), // emit the event in the current contract's execution context
             RequestFulfilled {
@@ -308,17 +321,8 @@ impl VrfConsumer {
                 payment: paid_amount,
             },
         );
-        // Clear existing storage vector and push new random words
-        while !self.last_random_words.is_empty() {
-            self.last_random_words.pop();
-        }
-        for word in &random_words {
-            self.last_random_words.push(*word);
-        }
-        self.event_started.set(true);
-
+        self.accepting_participants.set(true); // accept new participants
         Ok(())
-        // TODO: implement the distribution of ERC20 tokens based on the random words; pass user addss and number
     }
 
     /// External function called by VRF wrapper to fulfill randomness
@@ -434,13 +438,13 @@ impl VrfConsumer {
         Ok(())
     }
 
-    pub fn event_started(&self) -> bool {
-        self.event_started.get()
+    pub fn accepting_participants(&self) -> bool {
+        self.accepting_participants.get()
     }
 
     // /// Set the event started flag (internal)
-    // fn set_event_started(&mut self, started: bool) -> Result<(), Error> {
-    //     self.event_started.set(started);
+    // fn set_accepting_participants(&mut self, started: bool) -> Result<(), Error> {
+    //     self.accepting_participants.set(started);
     //     Ok(())
     // }
 
@@ -467,9 +471,8 @@ impl VrfConsumer {
     /// Takes a flat amount from user's wallet and adds them to participants list
     #[payable]
     pub fn participate_in_lottery(&mut self) -> Result<(), Vec<u8>> {
-        // Check if the event has already started
-        if self.event_started.get() {
-            return Err(b"Lottery event has already started".to_vec());
+        if !self.accepting_participants.get() {
+            return Err(b"Event is not accepting participants".to_vec());
         }
 
         // Get the required entry fee
