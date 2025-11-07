@@ -108,7 +108,7 @@ sol_interface! {
 // Define events
 sol! {
     event RequestSent(uint256 indexed requestId, uint32 numWords);
-    event RequestFulfilled(uint256 indexed requestId, uint256[] randomWords, uint256 payment);
+    event RequestFulfilled(uint256 indexed requestId, uint256[] randomWords, uint256 payment, address winner);
     event Received(address indexed sender, uint256 value);
 }
 
@@ -261,7 +261,7 @@ impl VrfConsumer {
         Ok(price)
     }
 
-    /// Internal function to distribute ERC20 tokens; TODO: implement
+    /// Internal function to distribute ERC20 tokens
     fn mint_distribution_reward(
         &mut self,
         recipient: Address,
@@ -278,21 +278,32 @@ impl VrfConsumer {
         Ok(())
     }
 
+    /// Internal function to decide the winner
     fn decide_winner(
         &mut self,
         random_words: Vec<U256>,
     ) -> Result<Address, Vec<u8>> {
-        // TODO: implement the distribution of ERC20 tokens based on the random words; pass user addss and number
-        let winner = random_words[0] % self.participants.len();
-        let winner_address = self.participants[winner];
-        if winner_address == U256::ZERO {
+        if self.participants.is_empty() {
+            return Err(b"No participants".to_vec());
+        }
+    
+        let winner_index = (random_words[0] % U256::from(self.participants.len())).as_usize();
+        let winner_address = self.participants[winner_index];
+    
+        if winner_address == Address::zero() {
             return Err(b"No winner found".to_vec());
-        }        
-        self.mint_distribution_reward(winner_address, self.participants.len()*self.lottery_entry_fee.get()*0.85)?; // "15% tax"
+        }
+    
+        // Calculate 85% of the total prize
+        let total_prize = self.lottery_entry_fee.get() * U256::from(self.participants.len());
+        let reward_amount = total_prize * U256::from(85) / U256::from(100);
+    
+        self.mint_distribution_reward(winner_address, reward_amount)?;
+    
         Ok(winner_address)
     }
 
-    /// Internal function to fulfill random words
+    /// Internal function to begin the lottery
     fn fulfill_random_words(
         &mut self,
         request_id: U256,
@@ -312,13 +323,14 @@ impl VrfConsumer {
         }
 
         self.accepting_participants.set(false); // await the random words result, distribute, then accept new participants
-        self.decide_winner(random_words)?;
+        let winner_address = self.decide_winner(random_words) ?? Address::ZERO;
         log(
             self.vm(), // emit the event in the current contract's execution context
             RequestFulfilled {
                 requestId: request_id,
                 randomWords: random_words.clone(),
                 payment: paid_amount,
+                winner: winner_address,
             },
         );
         self.accepting_participants.set(true); // accept new participants
