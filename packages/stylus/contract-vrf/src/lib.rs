@@ -15,7 +15,7 @@
 extern crate alloc;
 
 use alloc::vec::Vec;
-use alloc::string::String;
+use alloc::string::{String, ToString};
 
 /// Import items from the SDK. The prelude contains common traits and macros.
 use stylus_sdk::{
@@ -57,7 +57,8 @@ sol_storage! {
 
         // Token distribution variables
         address erc20_token_address; // ERC20 token address for token distribution
-        string[] participants; // user addresses preserved for order
+        address[] participants; // user addresses preserved for order
+        uint256 lottery_entry_fee; // flat amount required to participate in lottery
     }
 }
 
@@ -458,8 +459,50 @@ impl VrfConsumer {
         }
     
         Ok(self.participants.get(idx)
-            .map(|s| s.get_string())
+            .map(|s| s.to_string())
             .unwrap_or_default())
+    }
+
+    /// Participate in the lottery by paying the entry fee
+    /// Takes a flat amount from user's wallet and adds them to participants list
+    #[payable]
+    pub fn participate_in_lottery(&mut self) -> Result<(), Vec<u8>> {
+        // Check if the event has already started
+        if self.event_started.get() {
+            return Err(b"Lottery event has already started".to_vec());
+        }
+
+        // Get the required entry fee
+        let entry_fee = self.lottery_entry_fee.get();
+        
+        if entry_fee == U256::ZERO {
+            return Err(b"Lottery entry fee not set".to_vec());
+        }
+
+        let sent_amount = self.vm().msg_value();
+        if sent_amount != entry_fee {
+            return Err(b"Amount sent does not match entry fee".to_vec());
+        }
+
+        // Get the participant's address
+        let participant_address = self.vm().msg_sender();
+        
+        // Push the address directly (no need to convert to string and back)
+        self.participants.push(participant_address);
+
+        Ok(())
+    }
+
+    /// Get the lottery entry fee
+    pub fn lottery_entry_fee(&self) -> U256 {
+        self.lottery_entry_fee.get()
+    }
+
+    /// Set the lottery entry fee (owner only)
+    pub fn set_lottery_entry_fee(&mut self, fee: U256) -> Result<(), Error> {
+        self.ownable.only_owner()?;
+        self.lottery_entry_fee.set(fee);
+        Ok(())
     }
 
     /// Receive function equivalent - handles incoming ETH
