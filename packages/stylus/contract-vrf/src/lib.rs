@@ -431,11 +431,11 @@ impl VrfConsumer {
         self.event_started.get()
     }
 
-    /// Set the event started flag (internal)
-    fn set_event_started(&mut self, started: bool) -> Result<(), Error> {
-        self.event_started.set(started);
-        Ok(())
-    }
+    // /// Set the event started flag (internal)
+    // fn set_event_started(&mut self, started: bool) -> Result<(), Error> {
+    //     self.event_started.set(started);
+    //     Ok(())
+    // }
 
     pub fn last_request_timestamp(&self) -> U256 {
         self.last_request_timestamp.get()
@@ -450,11 +450,14 @@ impl VrfConsumer {
     }
 
     pub fn get_user_address(&self, index: U256) -> Result<String, Vec<u8>> {
-        let idx: usize = index.try_into().map_err(|_| "Index out of bounds".as_bytes().to_vec())?;
+        let idx: usize = index.try_into().map_err(|_| b"Index out of bounds".to_vec())?;
         if idx >= self.user_addresses.len() {
-            return Err("Index out of bounds".into());
+            return Err(b"Index out of bounds".to_vec());
         }
-        Ok(self.user_addresses.get(idx).map(|s| s.to_string()).unwrap_or_default())
+    
+        Ok(self.user_addresses.get(idx)
+            .map(|s| s.get_string())
+            .unwrap_or_default())
     }
 
     pub fn total_staked(&self) -> U256 {
