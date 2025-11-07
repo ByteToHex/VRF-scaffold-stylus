@@ -141,7 +141,6 @@ impl VrfConsumer {
         vrf_v2_plus_wrapper: Address,
         owner: Address
     ) -> Result<(), Error> {
-        println!("VrfConsumer constructor called");        
         // #[cfg(debug_assertions)] // Debug: Print addresses received in constructor
         // {
         //     debug_print_addresses(vrf_v2_plus_wrapper, owner, erc20_token);
@@ -385,9 +384,9 @@ impl VrfConsumer {
     }
 
     /// Withdraw tokens (native or ERC20)
-    /// If token_address is None or Address::ZERO, withdraws native tokens
+    /// If token_address is Address::ZERO, withdraws native tokens
     /// Otherwise, withdraws ERC20 tokens from the specified address
-    pub fn withdraw(&mut self, amount: U256, token_address: Option<Address>) -> Result<(), Vec<u8>> {
+    pub fn withdraw(&mut self, amount: U256, token_address: Address) -> Result<(), Vec<u8>> {
         self.ownable.only_owner()?;
     
         if self.withdrawing.get() {
@@ -398,7 +397,7 @@ impl VrfConsumer {
         let owner = self.ownable.owner();
 
         // Determine if withdrawing native or ERC20 tokens
-        let is_native = token_address.is_none() || token_address == Some(Address::ZERO);
+        let is_native = token_address == Address::ZERO;
         
         if is_native {
             // Transfer native tokens
@@ -406,14 +405,7 @@ impl VrfConsumer {
                 .call(&Call::new().value(amount), owner, &[])?;
         } else {
             // Withdraw ERC20 tokens
-            let erc20_addr = token_address.unwrap();
-            
-            if erc20_addr == Address::ZERO {
-                self.withdrawing.set(false);
-                return Err(b"Token not set".to_vec());
-            }
-
-            let erc20 = IERC20::new(erc20_addr);
+            let erc20 = IERC20::new(token_address);
             
             // Transfer ERC20 tokens from contract to owner
             erc20.transfer(&mut *self, owner, amount)?;
@@ -426,7 +418,7 @@ impl VrfConsumer {
 
     /// Withdraw native tokens (backward compatibility)
     pub fn withdraw_native(&mut self, amount: U256) -> Result<(), Vec<u8>> {
-        self.withdraw(amount, None)
+        self.withdraw(amount, Address::ZERO)
     }
 
     /// Withdraw ERC20 tokens (backward compatibility)
@@ -436,7 +428,7 @@ impl VrfConsumer {
         if token_address == Address::ZERO {
             return Err(b"Token not set".to_vec());
         }
-        self.withdraw(amount, Some(token_address))
+        self.withdraw(amount, token_address)
     }
 
     pub fn owner(&self) -> Address {
