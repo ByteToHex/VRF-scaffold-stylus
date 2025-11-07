@@ -245,6 +245,22 @@ impl VrfConsumer {
         Ok(price)
     }
 
+    /// Internal function to distribute ERC20 tokens
+    fn distribute_tokens(
+        &mut self,
+        recipient: Address,
+        amount: U256,
+    ) -> Result<bool, Vec<u8>> {
+        let token_address = self.erc20_token_address.get();
+        
+        if token_address == Address::ZERO {
+            return Err("ERC20 token not set".into());
+        }
+        
+        let erc20 = IERC20::new(token_address);
+        erc20.transfer(&mut *self, recipient, amount)
+    }
+
     /// Internal function to fulfill random words
     fn fulfill_random_words(
         &mut self,
