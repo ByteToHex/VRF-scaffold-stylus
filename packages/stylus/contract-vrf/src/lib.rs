@@ -38,26 +38,29 @@ sol_storage! {
     pub struct VrfConsumer {
         // VRF variables
         address i_vrf_v2_plus_wrapper;
-        mapping(uint256 => uint256) s_requests_paid; // store the amount paid for request random words
-        mapping(uint256 => uint256) s_requests_value; // store random word returned
-        mapping(uint256 => bool) s_requests_fulfilled; // store if request was fulfilled
+        mapping(uint256 => uint256) s_requests_paid;
+        mapping(uint256 => uint256) s_requests_value;
+        mapping(uint256 => bool) s_requests_fulfilled;
         uint256[] request_ids;
         uint256 last_request_id;
-        uint32 callback_gas_limit;
-        uint16 request_confirmations;
-        uint32 num_words;
+
+        // 🔧 changed: smaller ints -> uint256 to match 32-byte slot
+        uint256 callback_gas_limit;
+        uint256 request_confirmations;
+        uint256 num_words;
+
         Ownable ownable;
         bool withdrawing;
 
         // Event variables
-        bool accepting_participants; // Default false
+        bool accepting_participants;
         uint256 lottery_interval_hours; 
-        uint256 last_request_timestamp; // block timestamp for the last time request_random_words was called
+        uint256 last_request_timestamp;
 
         // Token distribution variables
-        address erc20_token_address; // ERC20 token address for token distribution
-        address[] participants; // user addresses preserved for order
-        uint256 lottery_entry_fee; // flat amount required to participate in lottery
+        address erc20_token_address;
+        address[] participants;
+        uint256 lottery_entry_fee;
     }
 }
 
@@ -160,9 +163,9 @@ impl VrfConsumer {
         //     debug_print_address("Stored ERC20 Token", stored_erc20);
         // }
         
-        self.callback_gas_limit.set(U32::from(100000));
-        self.request_confirmations.set(U16::from(3));
-        self.num_words.set(U32::from(1));
+        self.callback_gas_limit.set(U256::from(100000u32));
+        self.request_confirmations.set(U256::from(3u16));
+        self.num_words.set(U256::from(1u32));
         Ok(())
     }
 
@@ -431,16 +434,16 @@ impl VrfConsumer {
     }
 
     // Getter functions for configuration
-    pub fn callback_gas_limit(&self) -> U32 {
-        self.callback_gas_limit.get()
+    pub fn callback_gas_limit(&self) -> u32 {
+        self.callback_gas_limit.get().try_into().unwrap_or(100000)
     }
-
-    pub fn request_confirmations(&self) -> U16 {
-        self.request_confirmations.get()
+    
+    pub fn request_confirmations(&self) -> u16 {
+        self.request_confirmations.get().try_into().unwrap_or(3)
     }
-
-    pub fn num_words(&self) -> U32 {
-        self.num_words.get()
+    
+    pub fn num_words(&self) -> u32 {
+        self.num_words.get().try_into().unwrap_or(1)
     }
 
     pub fn i_vrf_v2_plus_wrapper(&self) -> Address {
