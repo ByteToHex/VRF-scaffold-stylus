@@ -229,3 +229,32 @@ export function getBlockExplorerUrlFromChain(chain: Chain): string | undefined {
     chain.blockExplorers?.default?.url || chain.blockExplorers?.etherscan?.url
   );
 }
+
+/**
+ * Get VRF V2+ Wrapper address for a given chain
+ * Returns network-specific VRF wrapper address or a placeholder for local devnet
+ */
+export function getVrfWrapperAddress(chain: Chain): Address {
+  // Check for environment variable override first
+  if (process.env["VRF_WRAPPER_ADDRESS"]) {
+    return process.env["VRF_WRAPPER_ADDRESS"] as Address;
+  }
+
+  // Network-specific addresses
+  switch (chain.id) {
+    case arbitrumSepolia.id:
+      return "0x29576aB8152A09b9DC634804e4aDE73dA1f3a3CC" as Address;
+    case arbitrum.id:
+      // Arbitrum One VRF wrapper address (update with actual address if known)
+      return "0x0000000000000000000000000000000000000000" as Address;
+    case arbitrumNitro.id:
+      // For local devnet, use a placeholder address
+      // You can deploy a mock VRF wrapper or set VRF_WRAPPER_ADDRESS env var
+      return (process.env["VRF_WRAPPER_ADDRESS_DEVNET"] || 
+              "0x0000000000000000000000000000000000000000") as Address;
+    default:
+      // For other networks, return zero address as placeholder
+      // Users should set VRF_WRAPPER_ADDRESS env var for their network
+      return "0x0000000000000000000000000000000000000000" as Address;
+  }
+}

@@ -48,12 +48,38 @@ export default async function deployScript(deployOptions: DeployOptions) {
   console.log(`\nERC20 Token deployed at: ${erc20TokenAddress}`);
   console.log(`Passing address to VRF contract...\n`);
 
+  // Get network-specific VRF wrapper address
+  const { getVrfWrapperAddress } = await import("./utils/network");
+  const vrfWrapperAddress = getVrfWrapperAddress(config.chain);
+  
+  console.log(`📋 Using VRF Wrapper Address: ${vrfWrapperAddress}`);
+  console.log(`📋 Using Owner Address: ${config.deployerAddress}`);
+  console.log(`📋 Using ERC20 Token Address: ${erc20TokenAddress}`);
+  
+  // Validate addresses before deployment
+  if (!config.deployerAddress || config.deployerAddress === "0x0000000000000000000000000000000000000000") {
+    throw new Error("❌ Invalid deployer address. The owner address cannot be zero (Ownable constructor requires a valid owner).");
+  }
+  
+  if (vrfWrapperAddress === "0x0000000000000000000000000000000000000000") {
+    console.warn(`⚠️  WARNING: VRF Wrapper address is zero address.`);
+    console.warn(`   This is acceptable for testing, but VRF functionality will not work.`);
+    console.warn(`   For local devnet, you can:`);
+    console.warn(`   1. Deploy a mock VRF wrapper contract first and set VRF_WRAPPER_ADDRESS_DEVNET`);
+    console.warn(`   2. Set VRF_WRAPPER_ADDRESS environment variable for any network`);
+    console.warn(`   3. Use Arbitrum Sepolia network (--network sepolia) which has a valid VRF wrapper`);
+  }
+  
+  if (erc20TokenAddress === "0x0000000000000000000000000000000000000000") {
+    throw new Error("❌ ERC20 token address is zero. ERC20 deployment must have succeeded.");
+  }
+
   // Deploy VRF contract with ERC20 token address
   const vrfDeployment = await deployStylusContract({
     contract: "contract-vrf",
     name: "vrf-consumer",
     constructorArgs: [
-      "0x29576aB8152A09b9DC634804e4aDE73dA1f3a3CC", // Hardcoded Arbitrum Sepolia VRF V2+ Wrapper address
+      vrfWrapperAddress, // Network-specific VRF V2+ Wrapper address
       config.deployerAddress!,
       erc20TokenAddress, // Pass the deployed ERC20 token address
     ],
