@@ -287,15 +287,23 @@ impl VrfConsumer {
             return Err(b"No participants".to_vec());
         }
     
-        let winner_index = (random_words[0] % U256::from(self.participants.len())).as_usize();
-        let winner_address = self.participants[winner_index];
-    
-        if winner_address == Address::zero() {
-            return Err(b"No winner found".to_vec());
+        if random_words.is_empty() {
+            return Err(b"No random words".to_vec());
         }
     
-        // Calculate 85% of the total prize
-        let total_prize = self.lottery_entry_fee.get() * U256::from(self.participants.len());
+        let winner_index: usize = (random_words[0] % U256::from(self.participants.len() as u64))
+            .try_into()
+            .expect("winner index too large");
+
+        let winner_address = self.participants.get(winner_index)
+            .ok_or_else(|| b"Invalid winner index".to_vec())?;
+        let zero_address = Address::repeat_byte(0);
+
+        if winner_address == zero_address {
+            return Err(b"No winner found".to_vec());
+        }
+
+        let total_prize = self.lottery_entry_fee.get() * U256::from(self.participants.len() as u64);
         let reward_amount = total_prize * U256::from(85) / U256::from(100);
     
         self.mint_distribution_reward(winner_address, reward_amount)?;
@@ -310,20 +318,23 @@ impl VrfConsumer {
         random_words: Vec<U256>,
     ) -> Result<(), Error> {
         let paid_amount = self.s_requests_paid.get(request_id);
-
+    
         if paid_amount == U256::ZERO {
             panic!("Request not found");
         }
-
-        //request_status.fulfilled = true;
         self.s_requests_fulfilled.insert(request_id, true);
-
+    
         if !random_words.is_empty() {
             self.s_requests_value.insert(request_id, random_words[0]);
         }
-
-        self.accepting_participants.set(false); // await the random words result, distribute, then accept new participants
-        let winner_address = self.decide_winner(random_words) ?? Address::ZERO;
+    
+        self.accepting_participants.set(false);
+    
+        let winner_address = match self.decide_winner(random_words.clone()) {
+            Ok(addr) => addr,
+            Err(_) => Address::ZERO,
+        };
+    
         log(
             self.vm(), // emit the event in the current contract's execution context
             RequestFulfilled {
@@ -333,7 +344,7 @@ impl VrfConsumer {
                 winner: winner_address,
             },
         );
-        self.accepting_participants.set(true); // accept new participants
+        self.accepting_participants.set(true); // accept new participants again
         Ok(())
     }
 
