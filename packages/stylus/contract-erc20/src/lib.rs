@@ -86,6 +86,7 @@ impl Erc20Token {
         cap: U256,
         owner: Address,
     ) -> Result<(), Error> {
+        println!("Erc20Token constructor called");
         self.metadata.constructor(name, symbol);
         self.capped.constructor(cap)?;
         self.ownable.constructor(owner)?;

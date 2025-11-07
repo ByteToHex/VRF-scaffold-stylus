@@ -141,7 +141,7 @@ impl VrfConsumer {
         vrf_v2_plus_wrapper: Address,
         owner: Address
     ) -> Result<(), Error> {
-        
+        println!("VrfConsumer constructor called");        
         // #[cfg(debug_assertions)] // Debug: Print addresses received in constructor
         // {
         //     debug_print_addresses(vrf_v2_plus_wrapper, owner, erc20_token);
@@ -384,8 +384,10 @@ impl VrfConsumer {
         self.last_request_id.get()
     }
 
-    /// Withdraw native tokens
-    pub fn withdraw_native(&mut self, amount: U256) -> Result<(), Vec<u8>> {
+    /// Withdraw tokens (native or ERC20)
+    /// If token_address is None or Address::ZERO, withdraws native tokens
+    /// Otherwise, withdraws ERC20 tokens from the specified address
+    pub fn withdraw(&mut self, amount: U256, token_address: Option<Address>) -> Result<(), Vec<u8>> {
         self.ownable.only_owner()?;
     
         if self.withdrawing.get() {
@@ -393,40 +395,48 @@ impl VrfConsumer {
         }
         self.withdrawing.set(true);
 
-        // Transfer the amount
-        self.vm()
-            .call(&Call::new().value(amount), self.ownable.owner(), &[])?;
+        let owner = self.ownable.owner();
+
+        // Determine if withdrawing native or ERC20 tokens
+        let is_native = token_address.is_none() || token_address == Some(Address::ZERO);
+        
+        if is_native {
+            // Transfer native tokens
+            self.vm()
+                .call(&Call::new().value(amount), owner, &[])?;
+        } else {
+            // Withdraw ERC20 tokens
+            let erc20_addr = token_address.unwrap();
+            
+            if erc20_addr == Address::ZERO {
+                self.withdrawing.set(false);
+                return Err(b"Token not set".to_vec());
+            }
+
+            let erc20 = IERC20::new(erc20_addr);
+            
+            // Transfer ERC20 tokens from contract to owner
+            erc20.transfer(&mut *self, owner, amount)?;
+        }
 
         self.withdrawing.set(false);
 
         Ok(())
     }
 
-    /// Withdraw ERC20 tokens
-    pub fn withdraw_erc20(&mut self, amount: U256) -> Result<(), Vec<u8>> {
-        self.ownable.only_owner()?;
-    
-        if self.withdrawing.get() {
-            return Err(b"Withdrawal in progress".to_vec());
-        }
-        self.withdrawing.set(true);
+    /// Withdraw native tokens (backward compatibility)
+    pub fn withdraw_native(&mut self, amount: U256) -> Result<(), Vec<u8>> {
+        self.withdraw(amount, None)
+    }
 
+    /// Withdraw ERC20 tokens (backward compatibility)
+    /// Uses the stored ERC20 token address
+    pub fn withdraw_erc20(&mut self, amount: U256) -> Result<(), Vec<u8>> {
         let token_address = self.erc20_token_address.get();
-        
         if token_address == Address::ZERO {
-            self.withdrawing.set(false);
             return Err(b"Token not set".to_vec());
         }
-
-        let erc20 = IERC20::new(token_address);
-        let owner = self.ownable.owner();
-        
-        // Transfer ERC20 tokens from contract to owner
-        erc20.transfer(&mut *self, owner, amount)?;
-
-        self.withdrawing.set(false);
-
-        Ok(())
+        self.withdraw(amount, Some(token_address))
     }
 
     pub fn owner(&self) -> Address {
