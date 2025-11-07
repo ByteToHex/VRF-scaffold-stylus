@@ -43,7 +43,7 @@ export default async function deployScript(deployOptions: DeployOptions) {
   await deployStylusContract({
     contract: "contract-erc20",
     name: "lottery-erc20",
-    constructorArgs: ["Erc20Example", "EXAMPLE", "1000000000000000000000000"],
+    constructorArgs: ["DAOChief", "DAO", "1000000000000000000000000"],
     ...deployOptions,
   });
 
