@@ -15,6 +15,7 @@ use openzeppelin_stylus::{
 use stylus_sdk::{
     alloy_primitives::{aliases::B32, uint, Address, U256, U8},
     prelude::*,
+    storage::StorageAddress,
 };
 
 const DECIMALS: U8 = uint!(10_U8);
@@ -71,6 +72,7 @@ struct Erc20Token {
     metadata: Erc20Metadata,
     capped: Capped,
     ownable: Ownable,
+    authorized_minter: StorageAddress,
 }
 
 #[public]
@@ -95,7 +97,16 @@ impl Erc20Token {
     // [`Erc20::_update`] to mint tokens -- it will the break `Capped`
     // mechanism.
     pub fn mint(&mut self, account: Address, value: U256) -> Result<(), Error> {
-        self.ownable.only_owner()?;
+        // Allow either owner or authorized minter to mint
+        let caller = self.vm().msg_sender();
+        let owner = self.ownable.owner();
+        let authorized = self.authorized_minter.get();
+        
+        if caller != owner && (authorized == Address::ZERO || caller != authorized) {
+            return Err(ownable::Error::UnauthorizedAccount(ownable::OwnableUnauthorizedAccount {
+                account: caller,
+            }))?;
+        }
 
         let max_supply = self.capped.cap();
 
@@ -178,5 +189,16 @@ impl Erc20Token {
     pub fn supports_interface(&self, interface_id: B32) -> bool {
         Erc20::supports_interface(&self.erc20, interface_id)
             || Erc20Metadata::supports_interface(&self.metadata, interface_id)
+    }
+
+    // Authorized minter getter and setter
+    pub fn authorized_minter(&self) -> Address {
+        self.authorized_minter.get()
+    }
+
+    pub fn set_authorized_minter(&mut self, minter: Address) -> Result<(), Error> {
+        self.ownable.only_owner()?;
+        self.authorized_minter.set(minter);
+        Ok(())
     }
 }
