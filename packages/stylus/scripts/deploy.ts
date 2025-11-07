@@ -3,6 +3,7 @@ import {
   getDeploymentConfig,
   getRpcUrlFromChain,
   printDeployedAddresses,
+  getContractData,
 } from "./utils/";
 import { DeployOptions } from "./utils/type";
 import { config as dotenvConfig } from "dotenv";
@@ -13,6 +14,8 @@ const envPath = path.resolve(__dirname, "../.env");
 if (fs.existsSync(envPath)) {
   dotenvConfig({ path: envPath });
 }
+import { Abi, Account, createPublicClient, createWalletClient, http, PublicClient, WalletClient } from "viem";
+import { privateKeyToAccount } from "viem/accounts";
 
 /**
  * Define your deployment logic here
@@ -56,6 +59,51 @@ export default async function deployScript(deployOptions: DeployOptions) {
   console.log(`ERC20 deployment address: ${erc20Deployment?.address}, ERC20 deployment tx hash: ${erc20Deployment?.txHash}`);
   console.log(`Please remember to update these using their respective ABIs.`);
 
+  try {
+    const publicClient = createPublicClient({
+      chain: config.chain,
+      transport: http(getRpcUrlFromChain(config.chain)),
+    });
+    const walletClient = createWalletClient({
+      chain: config.chain,
+      transport: http(getRpcUrlFromChain(config.chain)),
+    });
+
+    const account = privateKeyToAccount(config.privateKey as `0x${string}`);
+
+    await executeContractFunction({
+      contractName: "BLSToken",
+      contractAddress: erc20Deployment.address,
+      functionName: "setAuthorizedMinter",
+      args: [vrfDeployment.address],
+      account,
+      publicClient,
+      walletClient,
+      chainId: config.chain.id.toString(),
+      successMessage: `Authorized minter set to ${vrfDeployment.address}`,
+      errorMessage: "Failed to set authorized minter",
+    });    
+    await executeContractFunction({
+      contractName: "vrf-consumer",
+      contractAddress: vrfDeployment.address,
+      functionName: "set_erc20_token",
+      args: [erc20Deployment.address],
+      account,
+      publicClient,
+      walletClient,
+      chainId: config.chain.id.toString(),
+      successMessage: `ERC20 token address set to ${erc20Deployment.address}`,
+      errorMessage: "Failed to set ERC20 token address",
+    });
+
+  } catch (error) {
+    console.error(`Failed to set contract configurations: ${error}`);
+    if (error instanceof Error) {
+      console.error(error.message);
+    }
+    throw error;
+  }
+
   // EXAMPLE: Deploy to Orbit Chains, uncomment to try
   // await deployStylusContract({
   //   contract: "counter",
@@ -75,4 +123,50 @@ export default async function deployScript(deployOptions: DeployOptions) {
   // Print the deployed addresses
   console.log("\n\n");
   printDeployedAddresses(config.deploymentDir, config.chain.id.toString());
+}
+
+async function executeContractFunction({
+  contractName,
+  contractAddress,
+  functionName,
+  args,
+  account,
+  publicClient,
+  walletClient,
+  chainId,
+  successMessage,
+  errorMessage,
+}: {
+  contractName: string;
+  contractAddress: `0x${string}`;
+  functionName: string;
+  args: any[];
+  account: Account;
+  publicClient: PublicClient;
+  walletClient: WalletClient;
+  chainId: string;
+  successMessage: string;
+  errorMessage: string;
+}) {
+  try {
+    const contractData = getContractData(chainId, contractName);
+
+    const { request } = await publicClient.simulateContract({
+      account,
+      address: contractAddress,
+      abi: contractData.abi as Abi,
+      functionName,
+      args,
+    });
+
+    const txHash = await walletClient.writeContract(request);
+    console.log(`${successMessage}. Txn hash: ${txHash}`);
+
+    await publicClient.waitForTransactionReceipt({ hash: txHash });
+    console.log(`Transaction confirmed!`);
+  } catch (error) {
+    console.error(`${errorMessage}: ${error}`);
+    if (error instanceof Error) console.error(error.message);
+    throw error;
+  }
 }
