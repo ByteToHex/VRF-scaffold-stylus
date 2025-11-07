@@ -535,9 +535,9 @@ impl VrfConsumer {
     }
 
     /// Set the lottery interval in hours (owner only)
-    pub fn set_lottery_interval_hours(&mut self, hours: U256) -> Result<(), Error> {
+    pub fn set_lottery_interval_hours(&mut self, interval_hours: U256) -> Result<(), Error> {
         self.ownable.only_owner()?;
-        self.lottery_interval_hours.set(hours);
+        self.lottery_interval_hours.set(interval_hours);
         Ok(())
     }
 
