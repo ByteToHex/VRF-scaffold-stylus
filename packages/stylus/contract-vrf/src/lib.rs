@@ -126,15 +126,33 @@ impl From<ownable::Error> for Error {
 /// Declare that `VrfConsumer` is a contract with the following external methods.
 #[public]
 impl VrfConsumer {
-    /// Constructor - initializes the contract with VRF wrapper address
+    /// Constructor - initializes the contract with VRF wrapper address and ERC20 token address
     #[constructor]
     pub fn constructor(
         &mut self,
         vrf_v2_plus_wrapper: Address,
         owner: Address,
+        erc20_token: Address,
     ) -> Result<(), Error> {
+        // Debug: Print addresses received in constructor
+        #[cfg(debug_assertions)]
+        {
+            debug_print_addresses(vrf_v2_plus_wrapper, owner, erc20_token);
+        }
+        
         self.ownable.constructor(owner)?;
         self.i_vrf_v2_plus_wrapper.set(vrf_v2_plus_wrapper);
+        self.erc20_token_address.set(erc20_token);
+        
+        // Debug: Print stored addresses after setting
+        #[cfg(debug_assertions)]
+        {
+            let stored_vrf = self.i_vrf_v2_plus_wrapper.get();
+            let stored_erc20 = self.erc20_token_address.get();
+            debug_print_address("Stored VRF Wrapper", stored_vrf);
+            debug_print_address("Stored ERC20 Token", stored_erc20);
+        }
+        
         self.callback_gas_limit.set(U32::from(100000));
         self.request_confirmations.set(U16::from(3));
         self.num_words.set(U32::from(1));
@@ -335,6 +353,18 @@ impl VrfConsumer {
         self.i_vrf_v2_plus_wrapper.get()
     }
 
+    /// Get the ERC20 token address
+    pub fn erc20_token_address(&self) -> Address {
+        self.erc20_token_address.get()
+    }
+
+    /// Set the ERC20 token address (owner only)
+    pub fn set_erc20_token(&mut self, token_address: Address) -> Result<(), Error> {
+        self.ownable.only_owner()?;
+        self.erc20_token_address.set(token_address);
+        Ok(())
+    }
+
     /// Receive function equivalent - handles incoming ETH
     #[receive]
     #[payable]
@@ -351,6 +381,25 @@ impl VrfConsumer {
 }
 
 // Note: We keep ownership management internal through `ownable`.
+
+/// Debug helper function to print an address with a label
+#[cfg(debug_assertions)]
+fn debug_print_address(label: &str, address: Address) {
+    let address_hex = format!("{:?}", address);
+    println!("[VRF DEBUG] {}: {}", label, address_hex);
+}
+
+/// Debug helper function to print multiple addresses
+#[cfg(debug_assertions)]
+fn debug_print_addresses(
+    vrf_wrapper: Address,
+    owner: Address,
+    erc20_token: Address,
+) {
+    debug_print_address("VRF Wrapper Address", vrf_wrapper);
+    debug_print_address("Owner Address", owner);
+    debug_print_address("ERC20 Token Address", erc20_token);
+}
 
 fn get_extra_args_for_native_payment() -> Bytes {
     // Encode extra args according to VRFV2PlusClient._argsToBytes()

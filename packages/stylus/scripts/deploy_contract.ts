@@ -10,6 +10,7 @@ import {
   contractHasInitializeFunction,
   // estimateGasPrice,
 } from "./utils/";
+import { DeploymentData } from "./utils/type";
 import { exportStylusAbi } from "./export_abi";
 import { DeployOptions } from "./utils/type";
 import { buildDeployCommand } from "./utils/command";
@@ -21,11 +22,11 @@ import { arbitrumNitro } from "../../nextjs/utils/scaffold-stylus/supportedChain
  * Deploy a single contract using cargo stylus
  * @param deployOptions - The deploy options
  * @param additionalOptions - The additional options
- * @returns void
+ * @returns DeploymentData with address and txHash, or null if deployment failed
  */
 export default async function deployStylusContract(
   deployOptions: DeployOptions,
-) {
+): Promise<DeploymentData | null> {
   console.log(`\n🚀 Deploying contract in: ${deployOptions.contract}`);
 
   const config = getDeploymentConfig(deployOptions);
@@ -45,7 +46,7 @@ export default async function deployStylusContract(
 
     if (deployOptions.estimateGas) {
       console.log(deployOutput);
-      return;
+      return null;
     }
 
     // Extract the actual deployed address from the output
@@ -71,6 +72,9 @@ export default async function deployStylusContract(
 
     // Save the deployed address to chain-specific deployment file
     saveDeployment(config, deploymentInfo);
+    
+    // Store deployment info for return (deploymentInfo is guaranteed to be non-null here)
+    const returnValue: DeploymentData = deploymentInfo;
 
     // Step 2: Export ABI using the shared function
     await exportStylusAbi(
@@ -140,6 +144,8 @@ export default async function deployStylusContract(
         }
       }
     }
+    
+    return returnValue;
   } catch (error) {
     console.error(`❌ Deployment failed in: ${deployOptions.contract}`);
     if (error instanceof Error) {
