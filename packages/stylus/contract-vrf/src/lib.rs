@@ -57,9 +57,7 @@ sol_storage! {
 
         // Token distribution variables
         address erc20_token_address; // ERC20 token address for token distribution
-        mapping(string => uint256) user_stakes; // user address (as string) : staked amount (no decimals)
-        string[] user_addresses; // user addresses preserved for order
-        uint256 total_staked; // sum of total staked amounts
+        string[] participants; // user addresses preserved for order
     }
 }
 
@@ -449,27 +447,19 @@ impl VrfConsumer {
         self.last_request_timestamp.get()
     }
 
-    pub fn get_user_stake(&self, user_address: String) -> U256 {
-        self.user_stakes.get(user_address)
-    }
-
     pub fn get_user_addresses_count(&self) -> U256 {
-        U256::from(self.user_addresses.len())
+        U256::from(self.participants.len())
     }
 
     pub fn get_user_address(&self, index: U256) -> Result<String, Vec<u8>> {
         let idx: usize = index.try_into().map_err(|_| b"Index out of bounds".to_vec())?;
-        if idx >= self.user_addresses.len() {
+        if idx >= self.participants.len() {
             return Err(b"Index out of bounds".to_vec());
         }
     
-        Ok(self.user_addresses.get(idx)
+        Ok(self.participants.get(idx)
             .map(|s| s.get_string())
             .unwrap_or_default())
-    }
-
-    pub fn total_staked(&self) -> U256 {
-        self.total_staked.get()
     }
 
     /// Receive function equivalent - handles incoming ETH
