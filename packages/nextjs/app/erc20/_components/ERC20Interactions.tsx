@@ -69,8 +69,9 @@ export const ERC20Interactions = () => {
                 <div
                   style={{
                     color: isDarkMode ? "#30B4ED" : "#30B4ED",
-                    fontSize: "1.25rem",
-                    fontWeight: "bold",
+                    fontSize: "2rem",
+                    fontWeight: "800",
+                    lineHeight: "1.2",
                   }}
                 >
                   Lottery Token (LUK)
@@ -153,9 +154,10 @@ export const ERC20Interactions = () => {
                   border: isDarkMode
                     ? "1px solid var(--stroke-sub-20, rgba(255, 255, 255, 0.20))"
                     : "1px solid rgba(0, 0, 0, 0.1)",
+                  minHeight: "400px",
                 }}
               >
-                <div className="p-5 divide-y divide-secondary">
+                <div className="p-8">
                   <ParticipateInLotteryForm
                     contractAddress={vrfContractData.address}
                     contractAbi={vrfContractData.abi}

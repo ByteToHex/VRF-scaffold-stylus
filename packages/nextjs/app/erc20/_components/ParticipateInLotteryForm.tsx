@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { useTheme } from "next-themes";
 import { Abi, Address, TransactionReceipt } from "viem";
 import {
   useAccount,
@@ -28,6 +29,8 @@ export const ParticipateInLotteryForm = ({ contractAddress, contractAbi, onChang
   const { data: walletClient } = useWalletClient();
   const writeTxn = useTransactor();
   const { targetNetwork } = useTargetNetwork();
+  const { resolvedTheme } = useTheme();
+  const isDarkMode = useMemo(() => resolvedTheme === "dark", [resolvedTheme]);
 
   const { data: result, isPending, writeContractAsync } = useWriteContract();
   const wagmiConfig = useConfig();
@@ -148,16 +151,47 @@ export const ParticipateInLotteryForm = ({ contractAddress, contractAbi, onChang
   };
 
   return (
-    <div className="py-5 space-y-3 first:pt-0 last:pb-1">
-      <div className="flex flex-col gap-3">
-        <p className="font-medium my-0 break-words function-name">participateInLottery</p>
-        <div className="flex flex-col gap-2">
+    <div className="py-8 space-y-6 first:pt-0 last:pb-1">
+      <div className="flex flex-col gap-6">
+        <div>
+          <h2
+            className="my-0 break-words"
+            style={{
+              color: isDarkMode ? "#30B4ED" : "#30B4ED",
+              fontSize: "1.75rem",
+              fontWeight: "800",
+              lineHeight: "1.2",
+              marginBottom: "0.5rem",
+            }}
+          >
+            participateInLottery
+          </h2>
+          <div
+            className="text-sm leading-relaxed"
+            style={{
+              color: isDarkMode ? "rgba(255, 255, 255, 0.7)" : "rgba(0, 0, 0, 0.7)",
+              marginTop: "0.75rem",
+            }}
+          >
+            <p className="mb-2">
+              Join the decentralized lottery pool powered by Chainlink VRF for provably fair random selection. Each
+              participation requires a fixed entry fee in ETH and grants you a chance to win the accumulated prize pool.
+              Winners are selected through verifiable random functions, ensuring complete transparency and fairness in
+              the selection process.
+            </p>
+            <p className="mb-0">
+              Your Lottery Token (LUK) balance represents your stake in the current lottery round. Participants are
+              automatically entered into the next drawing cycle, with winners announced upon VRF fulfillment.
+            </p>
+          </div>
+        </div>
+        <div className="flex flex-col gap-4">
           {displayedTxResult && (
             <div className="w-full">
               <TxReceipt txResult={displayedTxResult} />
             </div>
           )}
-          <div className="flex flex-col gap-2">
+          <div className="flex flex-col gap-3">
             {/* Debug info - remove in production if desired */}
             {(writeDisabled || !hasEntryFee) && (
               <div className="text-xs text-base-content/60 p-2 bg-base-200 rounded">
@@ -172,7 +206,7 @@ export const ParticipateInLotteryForm = ({ contractAddress, contractAbi, onChang
                 <div>Entry Fee: {hasEntryFee ? "✓ Loaded" : "✗ Loading..."}</div>
               </div>
             )}
-            <div className="flex justify-end">
+            <div className="flex justify-center">
               <div
                 className={`flex ${
                   (writeDisabled || !hasEntryFee) &&
@@ -181,12 +215,15 @@ export const ParticipateInLotteryForm = ({ contractAddress, contractAbi, onChang
                 data-tip={getTooltipMessage() || undefined}
               >
                 <button
-                  className="send-button"
+                  className="btn btn-primary btn-lg px-8 py-4 text-lg font-bold"
+                  style={{
+                    minWidth: "200px",
+                    minHeight: "60px",
+                  }}
                   disabled={writeDisabled || isPending || !lotteryEntryFee}
                   onClick={handleParticipate}
                 >
-                  {isPending && <span className="loading loading-spinner loading-xs"></span>}
-                  Participate
+                  {isPending ? <span className="loading loading-spinner loading-md"></span> : "Participate in Lottery"}
                 </button>
               </div>
             </div>
