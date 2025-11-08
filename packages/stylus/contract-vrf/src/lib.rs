@@ -281,6 +281,46 @@ impl VrfConsumer {
         winner
     }
 
+    // pub fn raw_fulfill_random_words(
+    //     &mut self,
+    //     request_id: U256,
+    //     random_words: Vec<U256>,
+    // ) -> Result<(), Error> {
+    //     let vrf_wrapper_addr = self.i_vrf_v2_plus_wrapper.get();
+    //     let msg_sender = self.vm().msg_sender();
+    //     if msg_sender != vrf_wrapper_addr {
+    //         return Err(Error::OnlyVRFWrapperCanFulfill(OnlyVRFWrapperCanFulfill {
+    //             have: msg_sender,
+    //             want: vrf_wrapper_addr,
+    //         }));
+    //     }
+
+    //     // combine fulfill_random_words and decide_winner into one function because ABI exposes the internal function for some reason
+
+    //     let fulfilled_value = if !random_words.is_empty() {
+    //         random_words[0]
+    //     } else {
+    //         U256::ZERO
+    //     };
+        
+    //     self.last_fulfilled_id.set(request_id);
+    //     self.last_fulfilled_value.set(fulfilled_value);    
+    //     self.accepting_participants.set(false);
+    
+    //     let winner_address = self.decide_winner(random_words.clone());
+    
+    //     log(
+    //         self.vm(), // emit the event in the current contract's execution context
+    //         RequestFulfilled {
+    //             requestId: request_id,
+    //             randomWords: random_words.clone(),
+    //             winner: winner_address,
+    //         },
+    //     );
+    //     self.accepting_participants.set(true); // accept new participants again
+    //     Ok(())
+    // }
+
     /// Internal function to begin the lottery
     fn fulfill_random_words(
         &mut self,
@@ -337,6 +377,10 @@ impl VrfConsumer {
     pub fn get_last_fulfilled_value(&self) -> U256 {
         self.last_fulfilled_value.get()
     }
+
+    // pub fn destroy(&self) -> Result<(), Error> {
+    //     // pass
+    // }
 
     // pub fn withdraw_native(&mut self, amount: U256) -> Result<(), Vec<u8>> {
     //     self.ownable.only_owner()?;    
