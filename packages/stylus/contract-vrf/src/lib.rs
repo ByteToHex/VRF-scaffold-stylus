@@ -162,7 +162,9 @@ impl VrfConsumer {
         num_words: u32,
     ) -> Result<(U256, U256), Vec<u8>> {
         let external_vrf_wrapper_address = self.i_vrf_v2_plus_wrapper.get();
-
+        if self.vm().code_size(external_vrf_wrapper_address) == 0 {
+            return Err(b"VRF wrapper contract does not exist at given address".to_vec()); // simple validation
+        }
         let external_vrf_wrapper = IVRFV2PlusWrapper::new(external_vrf_wrapper_address);
 
         // Calculate request price
