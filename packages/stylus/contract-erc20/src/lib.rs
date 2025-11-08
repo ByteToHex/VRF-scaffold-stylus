@@ -18,7 +18,7 @@ use stylus_sdk::{
     storage::{StorageAddress, StorageBool},
 };
 
-const DECIMALS: U8 = uint!(10_U8);
+const DECIMALS: U8 = uint!(10_U8); // 10
 
 #[derive(SolidityError, Debug)]
 enum Error {
@@ -142,7 +142,7 @@ impl Erc20Token {
     }
 
     // IErc20 trait implementations
-    pub fn total_supply(&self) -> U256 {
+    pub fn total_supply(&self) -> U256 { // current minted/circulating supply, not fully diluted/fdv
         self.erc20.total_supply()
     }
 

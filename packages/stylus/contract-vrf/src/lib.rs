@@ -42,6 +42,7 @@ sol_storage! {
         address i_vrf_v2_plus_wrapper;
         uint256 last_fulfilled_id;
         uint256 last_fulfilled_value;
+        // address last_winner;
 
         // 🔧 changed: smaller ints -> uint256 to match 32-byte slot
         uint256 callback_gas_limit;
@@ -163,7 +164,7 @@ impl VrfConsumer {
     ) -> Result<(U256, U256), Vec<u8>> {
         let external_vrf_wrapper_address = self.i_vrf_v2_plus_wrapper.get();
         if self.vm().code_size(external_vrf_wrapper_address) == 0 {
-            return Err(b"VRF wrapper contract does not exist at given address".to_vec()); // simple validation
+            return Err(b"VRF wrapper contract does not exist at given address".to_vec()); // simple validation but costs 1MiB compiled..
         }
         let external_vrf_wrapper = IVRFV2PlusWrapper::new(external_vrf_wrapper_address);
 
@@ -249,11 +250,10 @@ impl VrfConsumer {
         amount: U256,
     ) -> Result<(), Vec<u8>> {
         let token_address = self.erc20_token_address.get();
-        
+        // self.ownable.only_owner()?; //guard        
         if token_address == Address::ZERO {
             return Err(b"Token not set".to_vec());
-        }
-        
+        }        
         let erc20 = IERC20::new(token_address);
         erc20.mint(&mut *self, recipient, amount)?;
         Ok(())
@@ -339,6 +339,7 @@ impl VrfConsumer {
         self.accepting_participants.set(false);
     
         let winner_address = self.decide_winner(random_words.clone());
+        // self.last_winner.set(winner_address);
     
         log(
             self.vm(), // emit the event in the current contract's execution context
@@ -377,6 +378,10 @@ impl VrfConsumer {
     pub fn get_last_fulfilled_value(&self) -> U256 {
         self.last_fulfilled_value.get()
     }
+
+    // pub fn get_last_winner(&self) -> Address {
+    //     self.last_winner.get()
+    // }
 
     // pub fn destroy(&self) -> Result<(), Error> {
     //     // pass
@@ -417,11 +422,11 @@ impl VrfConsumer {
     //     Ok(())
     // }
 
-    // pub fn get_user_addresses_count(&self) -> U256 {
+    // pub fn get_participant_count(&self) -> U256 {
     //     U256::from(self.participants.len())
     // }
 
-    // pub fn get_user_address(&self, index: U256) -> Result<Address, Vec<u8>> {
+    // pub fn get_participant_address(&self, index: U256) -> Result<Address, Vec<u8>> {
     //     let idx: usize = index.try_into().map_err(|_| b"OOB".to_vec())?;
     //     if idx >= self.participants.len() {
     //         return Err(b"OOB".to_vec());
