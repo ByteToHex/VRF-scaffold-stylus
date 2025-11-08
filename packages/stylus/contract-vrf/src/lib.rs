@@ -271,6 +271,7 @@ impl VrfConsumer {
         if winner != Address::ZERO {
             let reward = self.lottery_entry_fee.get() * U256::from(len) * U256::from(85) / U256::from(100);
             let _ = self.mint_distribution_reward(winner, reward);
+            self.participants.clear();
         }
         winner
     }
