@@ -69,7 +69,7 @@ export const LotteryEntryFeeDisplay = ({
           className="mb-0 break-all"
           style={{
             color: isDarkMode ? "#30B4ED" : "#30B4ED",
-            fontSize: "1.5rem",
+            fontSize: "2rem",
             fontWeight: "800",
             lineHeight: "1.2",
           }}

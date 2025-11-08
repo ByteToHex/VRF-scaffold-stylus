@@ -158,7 +158,7 @@ export const ParticipateInLotteryForm = ({ contractAddress, contractAbi, onChang
             className="my-0 break-words"
             style={{
               color: isDarkMode ? "#30B4ED" : "#30B4ED",
-              fontSize: "1.75rem",
+              fontSize: "2rem",
               fontWeight: "800",
               lineHeight: "1.2",
               marginBottom: "0.5rem",
@@ -167,10 +167,11 @@ export const ParticipateInLotteryForm = ({ contractAddress, contractAbi, onChang
             Participate In Lottery
           </h2>
           <div
-            className="text-sm leading-relaxed"
+            className="text-base leading-relaxed"
             style={{
               color: isDarkMode ? "rgba(255, 255, 255, 0.7)" : "rgba(0, 0, 0, 0.7)",
               marginTop: "0.75rem",
+              fontSize: "1.125rem",
             }}
           >
             <p className="mb-2">
@@ -215,10 +216,11 @@ export const ParticipateInLotteryForm = ({ contractAddress, contractAbi, onChang
                 data-tip={getTooltipMessage() || undefined}
               >
                 <button
-                  className="btn btn-primary btn-lg px-8 py-4 text-lg font-bold"
+                  className="btn btn-primary btn-lg px-8 py-4 font-bold"
                   style={{
                     minWidth: "200px",
                     minHeight: "60px",
+                    fontSize: "1.5rem",
                   }}
                   disabled={writeDisabled || isPending || !lotteryEntryFee}
                   onClick={handleParticipate}

@@ -64,16 +64,20 @@ export const BalanceOfDisplay = ({ contractAddress, contractAbi, refreshDisplayV
   const showAnimation = false;
 
   useEffect(() => {
-    refetch();
+    // Only refetch balanceOf if we have a connected address
+    if (connectedAddress) {
+      refetch();
+    }
     refetchDecimals();
-  }, [refetch, refetchDecimals, refreshDisplayVariables]);
+  }, [refetch, refetchDecimals, refreshDisplayVariables, connectedAddress]);
 
   useEffect(() => {
-    if (error) {
+    // Only show errors if we have a connected address (errors when no address is expected)
+    if (error && connectedAddress) {
       const parsedError = getParsedError(error);
       notification.error(parsedError);
     }
-  }, [error]);
+  }, [error, connectedAddress]);
 
   const formatBalance = (balance: bigint | undefined): string => {
     if (balance === undefined || balance === null) {
@@ -93,14 +97,21 @@ export const BalanceOfDisplay = ({ contractAddress, contractAbi, refreshDisplayV
           className="mb-0 break-all"
           style={{
             color: isDarkMode ? "#30B4ED" : "#30B4ED",
-            fontSize: "1.5rem",
+            fontSize: "2rem",
             fontWeight: "800",
             lineHeight: "1.2",
           }}
         >
           Balance Of
         </h3>
-        <button className="btn btn-ghost btn-xs" onClick={async () => await refetch()}>
+        <button
+          className="btn btn-ghost btn-xs"
+          onClick={async () => {
+            if (connectedAddress) {
+              await refetch();
+            }
+          }}
+        >
           {isFetching ? (
             <span className="loading loading-spinner loading-xs"></span>
           ) : (
@@ -126,6 +137,8 @@ export const BalanceOfDisplay = ({ contractAddress, contractAbi, refreshDisplayV
               }`}
               style={{
                 color: isDarkMode ? "white" : "black",
+                fontSize: "1.75rem",
+                fontWeight: "600",
               }}
             >
               {isFetching ? (
