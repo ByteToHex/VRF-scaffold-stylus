@@ -53,7 +53,7 @@ const VRFInteractions = () => {
         value: parseEther(fundAmount),
       });
       await refetchBalance();
-    } catch (e) {
+    } catch {
       // ignore, error shown via transactor
     } finally {
       setIsFunding(false);
@@ -64,7 +64,7 @@ const VRFInteractions = () => {
     try {
       await requestRandomWords({ functionName: "requestRandomWords" });
       await Promise.all([refetchLastFulfilledId(), refetchLastFulfilledValue(), refetchBalance()]);
-    } catch (e) {
+    } catch {
       // errors surfaced by wagmi notifications
     }
   };
