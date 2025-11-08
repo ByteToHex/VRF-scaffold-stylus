@@ -44,6 +44,16 @@ There is a lot of functionality that I was unable to include as it would exceed 
 
 ---
 
+### **Deployment**
+
+* Both contracts are deployed on Arbitrum Sepolia. Their addresses are as follows:
+  - **VRF Contract: 0xAC96361ff71F185f8E9b7EcC6849f996C615fe06**
+  - **ERC20 Contract: 0x4626FaB1392C9347021dCAe73FEFFd03FE080364**
+* The website is deployed on Vercel and can be accessed at the following URL:
+  - **Frontend: **
+  
+---
+
 ### **Lottery Mechanics**
 
 #### **Participation**
@@ -137,15 +147,6 @@ RewardToken {
 * **Bytecode-Efficient:** Overflow checks trimmed where safe for Stylus deployment.
 * **Self-Sustaining Loop:** The VRF decides winners → ERC20 mints rewards → Lottery resets for the next round.
 
----
-
-### **Deployment**
-
-* Both contracts are deployed on Arbitrum Sepolia. Their addresses are as follows:
-  - **VRF Contract: 0xAC96361ff71F185f8E9b7EcC6849f996C615fe06**
-  - **ERC20 Contract: 0x4626FaB1392C9347021dCAe73FEFFd03FE080364**
-* The website is deployed on Vercel and can be accessed at the following URL:
-  - **Frontend: **
 ---
 
 ### **Challenges**
