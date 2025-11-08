@@ -90,19 +90,60 @@ export const ParticipateInLotteryForm = ({ contractAddress, contractAbi, onChang
         value: lotteryEntryFee as bigint,
       };
 
-      await simulateContractWriteAndNotifyError({
-        wagmiConfig,
-        writeContractParams: writeContractObj,
-        chainId: targetNetwork.id as AllowedChainIds,
-      });
+      try {
+        await simulateContractWriteAndNotifyError({
+          wagmiConfig,
+          writeContractParams: writeContractObj,
+          chainId: targetNetwork.id as AllowedChainIds,
+        });
+      } catch (simError: any) {
+        // Check if simulation failed due to revert
+        const isSimRevert =
+          simError?.message?.includes("revert") ||
+          simError?.message?.includes("reverted") ||
+          simError?.shortMessage?.includes("revert") ||
+          simError?.shortMessage?.includes("reverted") ||
+          simError?.message?.includes("0x416c7265") ||
+          simError?.shortMessage?.includes("0x416c7265");
+
+        if (isSimRevert) {
+          notification.error("Unable to participate in lottery. Have you already joined the current one?");
+          return;
+        }
+        // Re-throw if it's not a revert error
+        throw simError;
+      }
 
       const makeWriteWithParams = () => writeContractAsync(writeContractObj);
       await writeTxn(makeWriteWithParams);
       onChange();
     } catch (e: any) {
       console.error("⚡️ ~ file: ParticipateInLotteryForm.tsx:handleParticipate ~ error", e);
-      const parsedError = getParsedErrorWithAllAbis(e, targetNetwork.id as AllowedChainIds);
-      notification.error(parsedError);
+
+      // Check if this is a transaction revert or error
+      const isRevertError =
+        e?.message?.includes("revert") ||
+        e?.message?.includes("reverted") ||
+        e?.shortMessage?.includes("revert") ||
+        e?.shortMessage?.includes("reverted") ||
+        e?.cause?.message?.includes("revert") ||
+        e?.cause?.message?.includes("reverted") ||
+        e?.walk?.()?.message?.includes("revert") ||
+        e?.walk?.()?.message?.includes("reverted");
+
+      // Check for the specific error signature 0x416c7265 (likely AlreadyParticipated or similar)
+      const hasErrorSignature =
+        e?.message?.includes("0x416c7265") ||
+        e?.shortMessage?.includes("0x416c7265") ||
+        e?.cause?.message?.includes("0x416c7265");
+
+      if (isRevertError || hasErrorSignature) {
+        notification.error("Unable to participate in lottery. Have you already joined the current one?");
+      } else {
+        // For other errors (network issues, etc.), show the parsed error
+        const parsedError = getParsedErrorWithAllAbis(e, targetNetwork.id as AllowedChainIds);
+        notification.error(parsedError);
+      }
     }
   };
 

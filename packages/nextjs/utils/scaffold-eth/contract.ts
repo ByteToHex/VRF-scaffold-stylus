@@ -31,6 +31,8 @@ import { WriteContractParameters, WriteContractReturnType, simulateContract } fr
 import { WriteContractVariables } from "wagmi/query";
 import deployedContractsData from "~~/contracts/deployedContracts";
 import externalContractsData from "~~/contracts/externalContracts";
+// @ts-ignore - requiredContracts has a space in filename
+import requiredContractsData from "~~/contracts/requiredContracts ";
 import scaffoldConfig from "~~/scaffold.config";
 
 type AddExternalFlag<T> = {
@@ -354,10 +356,19 @@ export const getParsedErrorWithAllAbis = (error: any, chainId: AllowedChainIds):
     }
 
     try {
-      // Get all deployed contracts for the current chain
-      const chainContracts = (deployedContractsData as GenericContractsDeclaration)[chainId];
+      // Get all deployed contracts for the current chain (from multiple sources)
+      const deployedChainContracts = (deployedContractsData as GenericContractsDeclaration)[chainId] || {};
+      const requiredChainContracts = (requiredContractsData as GenericContractsDeclaration)[chainId] || {};
+      const externalChainContracts = (externalContractsData as GenericContractsDeclaration)[chainId] || {};
 
-      if (!chainContracts) {
+      // Merge all contract sources
+      const chainContracts = {
+        ...deployedChainContracts,
+        ...requiredChainContracts,
+        ...externalChainContracts,
+      };
+
+      if (Object.keys(chainContracts).length === 0) {
         return originalParsedError;
       }
 
