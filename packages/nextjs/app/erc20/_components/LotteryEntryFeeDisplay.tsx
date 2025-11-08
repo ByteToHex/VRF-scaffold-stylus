@@ -74,7 +74,7 @@ export const LotteryEntryFeeDisplay = ({
             lineHeight: "1.2",
           }}
         >
-          lotteryEntryFee
+          Lottery Entry Fee
         </h3>
         <button className="btn btn-ghost btn-xs" onClick={async () => await refetch()}>
           {isFetching ? (

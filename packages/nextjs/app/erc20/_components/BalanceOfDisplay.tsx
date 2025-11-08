@@ -98,7 +98,7 @@ export const BalanceOfDisplay = ({ contractAddress, contractAbi, refreshDisplayV
             lineHeight: "1.2",
           }}
         >
-          balanceOf
+          Balance Of
         </h3>
         <button className="btn btn-ghost btn-xs" onClick={async () => await refetch()}>
           {isFetching ? (
@@ -131,7 +131,18 @@ export const BalanceOfDisplay = ({ contractAddress, contractAbi, refreshDisplayV
               {isFetching ? (
                 <span className="loading loading-spinner loading-xs"></span>
               ) : (
-                formatBalance(balanceResult as bigint | undefined)
+                <>
+                  {formatBalance(balanceResult as bigint | undefined)}
+                  <span
+                    style={{
+                      marginLeft: "0.5rem",
+                      fontWeight: "600",
+                      opacity: 0.8,
+                    }}
+                  >
+                    LUK
+                  </span>
+                </>
               )}
             </div>
           )}

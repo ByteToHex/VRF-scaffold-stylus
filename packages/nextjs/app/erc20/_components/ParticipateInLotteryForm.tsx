@@ -164,7 +164,7 @@ export const ParticipateInLotteryForm = ({ contractAddress, contractAbi, onChang
               marginBottom: "0.5rem",
             }}
           >
-            participateInLottery
+            Participate In Lottery
           </h2>
           <div
             className="text-sm leading-relaxed"
@@ -180,8 +180,8 @@ export const ParticipateInLotteryForm = ({ contractAddress, contractAbi, onChang
               the selection process.
             </p>
             <p className="mb-0">
-              Your Lottery Token (LUK) balance represents your stake in the current lottery round. Participants are
-              automatically entered into the next drawing cycle, with winners announced upon VRF fulfillment.
+              Your Ethereum Tokens (ETH) can be used to enter sweepstakes. The reward is denominated in Lottery Token
+              (LUK), which is autimatically awarded every drawing cycle, with winners announced upon VRF fulfillment.
             </p>
           </div>
         </div>
