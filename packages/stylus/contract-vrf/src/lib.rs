@@ -223,21 +223,21 @@ impl VrfConsumer {
     }
 
     /// View: get the current native price required to request randomness
-    pub fn get_request_price(&mut self) -> Result<U256, Vec<u8>> {
-        let callback_gas_limit: u32 = self.callback_gas_limit.get().try_into().unwrap_or(100000);
-        let num_words: u32 = self.num_words.get().try_into().unwrap_or(1);
+    // pub fn get_request_price(&mut self) -> Result<U256, Vec<u8>> {
+    //     let callback_gas_limit: u32 = self.callback_gas_limit.get().try_into().unwrap_or(100000);
+    //     let num_words: u32 = self.num_words.get().try_into().unwrap_or(1);
 
-        let external_vrf_wrapper_address = self.i_vrf_v2_plus_wrapper.get();
-        let external_vrf_wrapper = IVRFV2PlusWrapper::new(external_vrf_wrapper_address);
+    //     let external_vrf_wrapper_address = self.i_vrf_v2_plus_wrapper.get();
+    //     let external_vrf_wrapper = IVRFV2PlusWrapper::new(external_vrf_wrapper_address);
 
-        let price = external_vrf_wrapper.calculate_request_price_native(
-            &mut *self,
-            callback_gas_limit,
-            num_words,
-        )?;
+    //     let price = external_vrf_wrapper.calculate_request_price_native(
+    //         &mut *self,
+    //         callback_gas_limit,
+    //         num_words,
+    //     )?;
 
-        Ok(price)
-    }
+    //     Ok(price)
+    // }
 
     /// Internal function to distribute ERC20 tokens
     fn mint_distribution_reward(
