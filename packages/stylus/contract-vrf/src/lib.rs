@@ -440,16 +440,13 @@ impl VrfConsumer {
             return Err(b"Not accepting participants".to_vec());
         }
 
-        // Check if participant already exists by iterating through the list
         let msg_sender = self.vm().msg_sender();
         for i in 0..self.participants.len() {
             if self.participants.get(i) == Some(msg_sender) {
                 return Err(b"Already participating".to_vec());
             }
         }
-        // Get the required entry fee
-        let entry_fee = self.lottery_entry_fee.get();
-        
+        let entry_fee = self.lottery_entry_fee.get();        
         if entry_fee == U256::ZERO {
             return Err(b"Fee not set".to_vec());
         }
@@ -458,30 +455,24 @@ impl VrfConsumer {
         if sent_amount != entry_fee {
             return Err(b"Wrong amount".to_vec());
         }
-        let participant_address = self.vm().msg_sender();
-        self.participants.push(participant_address);
-
+        self.participants.push(self.vm().msg_sender());
         Ok(())
     }
 
-    /// Get the lottery entry fee
     pub fn lottery_entry_fee(&self) -> U256 {
         self.lottery_entry_fee.get()
     }
 
-    /// Set the lottery entry fee (owner only)
     pub fn set_lottery_entry_fee(&mut self, fee: U256) -> Result<(), Error> {
         self.ownable.only_owner()?;
         self.lottery_entry_fee.set(fee);
         Ok(())
     }
 
-    /// Get the lottery interval in hours
     pub fn lottery_interval_hours(&self) -> U256 {
         self.lottery_interval_hours.get()
     }
 
-    /// Set the lottery interval in hours (owner only)
     pub fn set_lottery_interval_hours(&mut self, interval_hours: U256) -> Result<(), Error> {
         self.ownable.only_owner()?;
         self.lottery_interval_hours.set(interval_hours);
