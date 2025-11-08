@@ -108,6 +108,7 @@ sol! {
     event RequestSent(uint256 indexed requestId, uint32 numWords, uint256 payment);
     event RequestFulfilled(uint256 indexed requestId, uint256[] randomWords, address winner);
     event Received(address indexed sender, uint256 value);
+    // event ParticipantJoined(address indexed participant, uint256 entryFee, uint256 totalParticipants); // Large Bytecode
 }
 
 // Define custom errors
@@ -460,6 +461,16 @@ impl VrfConsumer {
             return Err(b"Wrong amount".to_vec());
         }
         self.participants.push(self.vm().msg_sender());
+        
+        // log(
+        //     self.vm(),
+        //     ParticipantJoined {
+        //         participant: msg_sender,
+        //         entryFee: entry_fee,
+        //         totalParticipants: U256::from(self.participants.len()),
+        //     },
+        // );
+        
         Ok(())
     }
 
