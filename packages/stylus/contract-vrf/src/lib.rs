@@ -196,7 +196,7 @@ impl VrfConsumer {
         if U256::from(self.vm().block_timestamp())
         < self.last_request_timestamp.get() + self.lottery_interval_hours.get() * U256::from(3600)
         {
-            return Err(b"Too soon".to_vec());
+            return Err(b"Too soon to resolve lottery".to_vec());
         }
     
         let callback_gas_limit = self.callback_gas_limit.get().try_into().unwrap_or(100000);
@@ -336,63 +336,15 @@ impl VrfConsumer {
         self.last_fulfilled_value.get()
     }
 
-    // /// Withdraw tokens (native or ERC20) If token_address is Address::ZERO, withdraws native tokens
-    // pub fn withdraw(&mut self, amount: U256, token_address: Address) -> Result<(), Vec<u8>> {
-    //     self.ownable.only_owner()?;
-    
+    // pub fn withdraw_native(&mut self, amount: U256) -> Result<(), Vec<u8>> {
+    //     self.ownable.only_owner()?;    
     //     if self.withdrawing.get() {
     //         return Err(b"Withdrawal in progress".to_vec());
     //     }
     //     self.withdrawing.set(true);
-
-    //     let owner = self.ownable.owner();
-
-    //     // Determine if withdrawing native or ERC20 tokens
-    //     let is_native = token_address == Address::ZERO;
-        
-    //     if is_native {
-    //         // Transfer native tokens
-    //         self.vm()
-    //             .call(&Call::new().value(amount), owner, &[])?;
-    //     } else {
-    //         // Withdraw ERC20 tokens
-    //         let erc20 = IERC20::new(token_address);
-            
-    //         // Transfer ERC20 tokens from contract to owner
-    //         erc20.transfer(&mut *self, owner, amount)?;
-    //     }
-
+    //     self.vm().call(&Call::new().value(amount), self.ownable.owner(), &[])?;
     //     self.withdrawing.set(false);
-
     //     Ok(())
-    // }
-
-    // /// Withdraw native tokens (backward compatibility)
-    // pub fn withdraw_native(&mut self, amount: U256) -> Result<(), Vec<u8>> {
-    //     self.withdraw(amount, Address::ZERO)
-    // }
-
-    // /// Withdraw ERC20 tokens (backward compatibility)
-    // pub fn withdraw_erc20(&mut self, amount: U256) -> Result<(), Vec<u8>> {
-    //     let token_address = self.erc20_token_address.get();
-    //     if token_address == Address::ZERO {
-    //         return Err(b"Token not set".to_vec());
-    //     }
-    //     self.withdraw(amount, token_address)
-    // }
-
-    // pub fn last_request_timestamp(&self) -> U256 {
-    //     self.last_request_timestamp.get()
-    // }
-
-    // Getter functions for configuration
-
-    // pub fn owner(&self) -> Address {
-    //     self.ownable.owner()
-    // }
-
-    // pub fn callback_gas_limit(&self) -> u32 {
-    //     self.callback_gas_limit.get().try_into().unwrap_or(100000)
     // }
 
     pub fn i_vrf_v2_plus_wrapper(&self) -> Address {
@@ -460,11 +412,11 @@ impl VrfConsumer {
         Ok(())
     }
 
-    pub fn lottery_entry_fee(&self) -> U256 {
+    pub fn lottery_entry_fee(&self) -> U256 { // In Wei (Eth)
         self.lottery_entry_fee.get()
     }
 
-    pub fn set_lottery_entry_fee(&mut self, fee: U256) -> Result<(), Error> {
+    pub fn set_lottery_entry_fee(&mut self, fee: U256) -> Result<(), Error> {// In Wei (Eth)
         self.ownable.only_owner()?;
         self.lottery_entry_fee.set(fee);
         Ok(())
