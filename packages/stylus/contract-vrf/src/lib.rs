@@ -259,36 +259,17 @@ impl VrfConsumer {
     }
 
     /// Internal function to decide the winner
-    fn decide_winner(
-        &mut self,
-        random_words: Vec<U256>,
-    ) -> Result<Address, Vec<u8>> {
-        if self.participants.is_empty() {
-            return Err(b"No participants".to_vec());
+    fn decide_winner(&mut self, random_words: &[U256]) -> Address {
+        if self.participants.is_empty() || random_words.is_empty() {
+            return Address::ZERO;
         }
-    
-        if random_words.is_empty() {
-            return Err(b"No words".to_vec());
+        let idx = (random_words[0] % U256::from(self.participants.len() as u64)).as_usize();
+        let winner = self.participants.get(idx).unwrap_or(Address::ZERO);
+        if winner != Address::ZERO {
+            let prize = self.lottery_entry_fee.get() * U256::from(self.participants.len() as u64) * U256::from(85) / U256::from(100);
+            let _ = self.mint_distribution_reward(winner, prize);
         }
-    
-        let winner_index: usize = (random_words[0] % U256::from(self.participants.len() as u64))
-            .try_into()
-            .expect("winner index too large");
-
-        let winner_address = self.participants.get(winner_index)
-            .ok_or_else(|| b"Invalid index".to_vec())?;
-        let zero_address = Address::repeat_byte(0);
-
-        if winner_address == zero_address {
-            return Err(b"No winner".to_vec());
-        }
-
-        let total_prize = self.lottery_entry_fee.get() * U256::from(self.participants.len() as u64);
-        let reward_amount = total_prize * U256::from(85) / U256::from(100);
-    
-        self.mint_distribution_reward(winner_address, reward_amount)?;
-    
-        Ok(winner_address)
+        winner
     }
 
     /// Internal function to begin the lottery
@@ -353,51 +334,50 @@ impl VrfConsumer {
         self.last_fulfilled_value.get()
     }
 
-    /// Withdraw tokens (native or ERC20) If token_address is Address::ZERO, withdraws native tokens
-    pub fn withdraw(&mut self, amount: U256, token_address: Address) -> Result<(), Vec<u8>> {
-        self.ownable.only_owner()?;
+    // /// Withdraw tokens (native or ERC20) If token_address is Address::ZERO, withdraws native tokens
+    // pub fn withdraw(&mut self, amount: U256, token_address: Address) -> Result<(), Vec<u8>> {
+    //     self.ownable.only_owner()?;
     
-        if self.withdrawing.get() {
-            return Err(b"Withdrawal in progress".to_vec());
-        }
-        self.withdrawing.set(true);
+    //     if self.withdrawing.get() {
+    //         return Err(b"Withdrawal in progress".to_vec());
+    //     }
+    //     self.withdrawing.set(true);
 
-        let owner = self.ownable.owner();
+    //     let owner = self.ownable.owner();
 
-        // Determine if withdrawing native or ERC20 tokens
-        let is_native = token_address == Address::ZERO;
+    //     // Determine if withdrawing native or ERC20 tokens
+    //     let is_native = token_address == Address::ZERO;
         
-        if is_native {
-            // Transfer native tokens
-            self.vm()
-                .call(&Call::new().value(amount), owner, &[])?;
-        } else {
-            // Withdraw ERC20 tokens
-            let erc20 = IERC20::new(token_address);
+    //     if is_native {
+    //         // Transfer native tokens
+    //         self.vm()
+    //             .call(&Call::new().value(amount), owner, &[])?;
+    //     } else {
+    //         // Withdraw ERC20 tokens
+    //         let erc20 = IERC20::new(token_address);
             
-            // Transfer ERC20 tokens from contract to owner
-            erc20.transfer(&mut *self, owner, amount)?;
-        }
+    //         // Transfer ERC20 tokens from contract to owner
+    //         erc20.transfer(&mut *self, owner, amount)?;
+    //     }
 
-        self.withdrawing.set(false);
+    //     self.withdrawing.set(false);
 
-        Ok(())
-    }
+    //     Ok(())
+    // }
 
-    /// Withdraw native tokens (backward compatibility)
-    pub fn withdraw_native(&mut self, amount: U256) -> Result<(), Vec<u8>> {
-        self.withdraw(amount, Address::ZERO)
-    }
+    // /// Withdraw native tokens (backward compatibility)
+    // pub fn withdraw_native(&mut self, amount: U256) -> Result<(), Vec<u8>> {
+    //     self.withdraw(amount, Address::ZERO)
+    // }
 
-    /// Withdraw ERC20 tokens (backward compatibility)
-    /// Uses the stored ERC20 token address
-    pub fn withdraw_erc20(&mut self, amount: U256) -> Result<(), Vec<u8>> {
-        let token_address = self.erc20_token_address.get();
-        if token_address == Address::ZERO {
-            return Err(b"Token not set".to_vec());
-        }
-        self.withdraw(amount, token_address)
-    }
+    // /// Withdraw ERC20 tokens (backward compatibility)
+    // pub fn withdraw_erc20(&mut self, amount: U256) -> Result<(), Vec<u8>> {
+    //     let token_address = self.erc20_token_address.get();
+    //     if token_address == Address::ZERO {
+    //         return Err(b"Token not set".to_vec());
+    //     }
+    //     self.withdraw(amount, token_address)
+    // }
 
     pub fn last_request_timestamp(&self) -> U256 {
         self.last_request_timestamp.get()
@@ -408,9 +388,9 @@ impl VrfConsumer {
     }
 
     // Getter functions for configuration
-    pub fn callback_gas_limit(&self) -> u32 {
-        self.callback_gas_limit.get().try_into().unwrap_or(100000)
-    }
+    // pub fn callback_gas_limit(&self) -> u32 {
+    //     self.callback_gas_limit.get().try_into().unwrap_or(100000)
+    // }
 
     pub fn i_vrf_v2_plus_wrapper(&self) -> Address {
         self.i_vrf_v2_plus_wrapper.get()
@@ -476,11 +456,7 @@ impl VrfConsumer {
         if sent_amount != entry_fee {
             return Err(b"Wrong amount".to_vec());
         }
-
-        // Get the participant's address
         let participant_address = self.vm().msg_sender();
-        
-        // Push the address directly (no need to convert to string and back)
         self.participants.push(participant_address);
 
         Ok(())
