@@ -269,9 +269,11 @@ impl VrfConsumer {
         let winner = self.participants.get(idx).unwrap_or(Address::ZERO);
     
         if winner != Address::ZERO {
-            let reward = self.lottery_entry_fee.get() * U256::from(len) * U256::from(85) / U256::from(100);
+            let reward = self.lottery_entry_fee.get() * U256::from(len); //* U256::from(85) / U256::from(100);
             let _ = self.mint_distribution_reward(winner, reward);
-            self.participants.clear();
+            while !self.participants.is_empty() {
+                let _ = self.participants.pop();
+            }
         }
         winner
     }
@@ -324,14 +326,10 @@ impl VrfConsumer {
 
         self.fulfill_random_words(request_id, random_words)
     }
-    /// Get the last fulfilled request ID
-    pub fn get_last_fulfilled_id(&self) -> U256 {
-        self.last_fulfilled_id.get()
-    }
-
-    /// Get the last fulfilled request value
-    pub fn get_last_fulfilled_value(&self) -> U256 {
-        self.last_fulfilled_value.get()
+    
+    /// Get the last fulfilled request ID and value
+    pub fn get_last_fulfilled(&self) -> (U256, U256) {
+        (self.last_fulfilled_id.get(), self.last_fulfilled_value.get())
     }
 
     // /// Withdraw tokens (native or ERC20) If token_address is Address::ZERO, withdraws native tokens
