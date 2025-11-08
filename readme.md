@@ -1,272 +1,159 @@
-# 🏗 scaffold-stylus
+## **Stylus VRF Consumer Lottery & ERC20 Reward System**
 
-<h4 align="center">
-  <a href="https://arb-stylus.github.io/scaffold-stylus-docs/">Documentation</a> |
-  <a href="https://www.scaffoldstylus.com/">Website</a>
-</h4>
+### **Purpose**
 
-🧪 An open-source, up-to-date toolkit for building decentralized applications (dapps) on the Arbitrum blockchain. It's designed to make it easier for developers to create and deploy smart contracts and build user interfaces that interact with those contracts.
+This project implements a **provably fair on-chain lottery** using **Chainlink VRF V2+** and **Stylus (Arbitrum)**.
+It uses two **interdependent contracts**:
 
-⚙️ Built using Rust, NextJS, RainbowKit, Stylus, Wagmi, Viem, and TypeScript.
+* **VRF Consumer:** Manages lottery entries, randomness requests, and winner selection.
+* **ERC20 Token:** Handles reward minting and enforces consensus by trusting only the VRF Consumer as the authorized minter.
 
-- ✅ **Contract Hot Reload**: Your frontend auto-adapts to your smart contract as you edit it.
-- 🪝 **[Custom hooks](https://arb-stylus.github.io/scaffold-stylus-docs/components)**: Collection of React hooks wrapped around [wagmi](https://wagmi.sh/) to simplify interactions with smart contracts with TypeScript autocompletion.
-- 🧱 [**Components**](https://arb-stylus.github.io/scaffold-stylus-docs/hooks): Collection of common web3 components to quickly build your frontend.
-- 🔥 **Burner Wallet & Local Faucet**: Quickly test your application with a burner wallet and local faucet.
-- 🔐 **Integration with Wallet Providers**: Connect to different wallet providers and interact with the Arbitrum network.
+Together, they form a system where:
 
-![Debug Contracts tab](./packages/nextjs/public/debug-image.png)
-
-## Requirements
-
-Before you begin, you need to install the following tools:
-
-- [Node (>= v20.18)](https://nodejs.org/en/download/)
-- Yarn ([v2+](https://yarnpkg.com/getting-started/install))
-- [Git](https://git-scm.com/downloads)
-- [Docker](https://docs.docker.com/engine/install/)
-- [Foundry Cast](https://getfoundry.sh/)
-
-## Quickstart
-
-To get started with Scaffold-Stylus, follow the steps below:
-
-### 1. Install Stylus tools (or use stylusup)
-
-If you prefer a one-liner, install via stylusup (recommended):
-
-Tool for installing all the Stylus essentials for development. [Stylusup](https://stylusup.sh/#) will install the latest stable versions of:
-
-- [Rust](https://www.rust-lang.org/tools/install) (if not present) to provide the core programming environment.
-- [cargo-stylus](https://github.com/OffchainLabs/cargo-stylus/blob/main/README.md) (latest version) a tool for creating and managing Stylus projects.
-- Adding WebAssembly support to compile Rust code for blockchain environments.
-- Optionally collecting and sending telemetry data to track installation statistics.
-
-```bash
-curl -s https://stylusup.sh/install.sh | sh
-```
-
-### Alternatively, install Rust and the Stylus CLI tool with Cargo:
-
-```bash
-curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
-```
-
-Check the [Rust installation guide](https://www.rust-lang.org/tools/install) for more information.
-
-Then install the Stylus CLI tools:
-
-```bash
-cargo install --force cargo-stylus cargo-stylus-check
-```
-
-**Prerequisite:**
-
-- `cargo-stylus` version `^0.6.1`
-- `rustc` version match with `packages/stylus/your-contract/rust-toolchain.toml`
-
-Set default `toolchain` match `rust-toolchain.toml` and add the `wasm32-unknown-unknown` build target to your Rust compiler:
-
-```bash
-rustup default 1.89
-rustup target add wasm32-unknown-unknown --toolchain 1.89
-```
-
-You should now have it available as a Cargo subcommand:
-
-```bash
-cargo stylus --help
-```
-
-### 2. Create a new project (recommended)
-
-Use the interactive setup to scaffold a new project:
-
-```bash
-npx create-stylus@latest
-```
-
-Then navigate into your project directory:
-
-```bash
-cd <project-name>
-yarn install
-# Initialize submodules (required for Nitro dev node)
-git submodule update --init --recursive
-```
-
-### 3. Clone this repo & install dependencies (alternative)
-
-```bash
-git clone https://github.com/Arb-Stylus/scaffold-stylus.git
-cd scaffold-stylus
-yarn install
-# Initialize submodules (required for Nitro dev node)
-git submodule update --init --recursive
-```
-
-### 4. Run a local network
-
-In your first terminal:
-
-```bash
-yarn chain
-```
-
-This command starts a local Stylus-compatible network using the Nitro dev node script (`./nitro-devnode/run-dev-node.sh`). The network runs on your local machine and can be used for testing and development. You can customize the Nitro dev node configuration in the `nitro-devnode` submodule.
-
-### 5. Deploy the test contract
-
-In your second terminal:
-
-```bash
-yarn deploy
-```
-
-This command deploys a test smart contract to the local network. The contract is located in `packages/stylus/your-contract/src` and can be modified to suit your needs. The `yarn deploy` command uses the deploy script located in `packages/stylus/scripts` to deploy the contract to the network. You can also customize the deploy script .
-
-### 6. Start your NextJS app
-
-In your third terminal:
-
-```bash
-yarn start
-```
-
-Visit your app at: `http://localhost:3000`. You can interact with your smart contract using the **Debug Contracts** page, which provides a user-friendly interface for testing your contract's functions and viewing its state.
-
-### 7. Test your smart contract
-
-```bash
-yarn stylus:test
-```
-
-## Development Workflow
-
-- Edit your smart contract `lib.rs` in `packages/stylus/your-contract/src`
-- Edit your frontend in `packages/nextjs/app`
-- Edit your deployment scripts in `packages/stylus/scripts`
-
-## Create Your Own Contract
-
-Scaffold-Stylus enables you to create and deploy multiple contracts within a single project. Follow the steps below to create and deploy your own contracts.
-
-### Step 1: Generate New Contract
-
-Use the following command to create a new contract and customize it as needed:
-
-```bash
-yarn new-module <contract-name>
-```
-
-The generated contract will be located in `packages/stylus/<contract-name>`.
-
-### Step 2: Deploy Your Contract
-
-```bash
-yarn deploy [...options]
-```
-
-This command runs the `deploy.ts` script located in `packages/stylus/scripts`. You can customize this script with your deployment logic.
-
-**Available Options:**
-
-- `--network <network>`: Specify which network to deploy to
-- `--estimate-gas`: Only perform gas estimation without deploying
-- `--max-fee=<maxFee>`: Set maximum fee per gas in gwei
-
-**Note:** Deployment information is automatically saved in `packages/stylus/deployments` by default.
-
-## Deploying to Other Networks
-
-To deploy your contracts to other networks (other than the default local Nitro dev node), you'll need to configure your RPC endpoint and wallet credentials.
-
-### Prerequisites
-
-1. **Set the RPC URL**
-
-   Configure your target network's RPC endpoint using the proper `RPC_URL_<network>` environment variable. You can set this in your shell or create a `.env` file (see `.env.example` for reference):
-
-   ```env
-   RPC_URL_SEPOLIA=https://your-network-rpc-url
-   ```
-
-   **Note:** If RPC URL is not provided, system will use default public RPC URL from that network
-
-2. **Set the Private Key**
-
-   For real deployments, you must provide your own wallet's private key. Set the `PRIVATE_KEY_<network>` environment variable:
-
-   ```env
-   PRIVATE_KEY_SEPOLIA=your_private_key_here
-   ```
-
-   **Security Note:** A development key is used by default when running the Nitro dev node locally, but for external deployments, you must provide your own private key.
-
-3. **Set the Account Address**
-
-   Set the `ACCOUNT_ADDRESS_<network>`
-
-   ```env
-   ACCOUNT_ADDRESS_SEPOLIA=your_account_address_here
-   ```
-
-4. **Update Frontend Configuration**
-
-   Open `packages/nextjs/scaffold.config.ts` and update the `targetNetworks` array to include your target chain. This ensures your frontend connects to the correct network and generates the proper ABI in `deployedContracts.ts`:
-
-   ```ts
-   import * as chains from "./utils/scaffold-stylus/supportedChains";
-   // ...
-   targetNetworks: [chains.arbitrumSepolia],
-   ```
-
-### Available Networks
-
-This template supports Arbitrum networks only. You can test which networks are available and their RPC URLs:
-
-```bash
-yarn info:networks
-```
-
-This will show you all supported networks and their corresponding RPC endpoints.
-
-### Deploy to Other Network (Non-Orbit Chains)
-
-Once configured, deploy to your target network:
-
-```bash
-yarn deploy --network <network>
-```
-
-**Important Security Notes:**
-
-- The values in `.env.example` provide a template for required environment variables
-- **Always keep your private key secure and never commit it to version control**
-- Consider using environment variable management tools for production deployments
-
-### Deploy to Orbit Chains
-
-Visit our [Deploy to Orbit chain documentation](https://arb-stylus.github.io/scaffold-stylus-docs/deploying/deploy-to-orbit-chains) for detailed guide
-
-## Verify your contract (Highly Experimental)
-
-Visit our [Verify section](https://arb-stylus.github.io/scaffold-stylus-docs/recipes/verify-contract-custom-chain)
-
-## 🛠️ Troubleshooting Common Issues
-
-Visit our [Troubleshooting section](https://arb-stylus.github.io/scaffold-stylus-docs/quick-start/troubleshooting)
+1. Participants enter by paying ETH (`participate_in_lottery()`).
+2. Chainlink Automation triggers periodic randomness requests (`request_random_words()`).
+3. Chainlink VRF provides verifiable randomness (`raw_fulfill_random_words()`).
+4. The VRF Consumer selects a random winner.
+5. The ERC20 contract mints tokens directly to the winner, validating that the mint request originated from the trusted VRF Consumer.
 
 ---
 
-## Documentation
+### **Core VRF Flow**
 
-Visit our [docs](https://arb-stylus.github.io/scaffold-stylus-docs/) to learn how to start building with Scaffold-Stylus.
+I spent the most time on the smart contracts, which can be found here:
+ - **..\vrf-scaffold-stylus\packages\stylus\erc20-example\src\lib.rs**
+ - **..\vrf-scaffold-stylus\packages\stylus\vrf-consumer\src\lib.rs**
+ 
+There is a lot of functionality that I was unable to include as it would exceed the 24 MiB limit on deployable contracts to the local node/test chain.
 
-To learn more about its features, check out our [website](https://www.scaffoldstylus.com/).
+#### 1. **Request Random Outcome**
 
-## Contributing to Scaffold-Stylus
+**`request_random_words()`**
 
-We welcome contributions to Scaffold-Stylus!
+* Currently triggered manually, but intended/designed to be triggered periodically by Chainlink Automation.
+* Only callable after `lottery_interval_hours` since last draw.
+* Pays native ETH to the VRF Wrapper, logs a `RequestSent` event, and saves timestamp.
 
-Please see [CONTRIBUTING.md](https://github.com/Arb-Stylus/scaffold-stylus/blob/main/CONTRIBUTING.md) for more information and guidelines for contributing to Scaffold-Stylus.
+#### 2. **Fulfill Randomness**
+
+**`raw_fulfill_random_words(request_id, random_words)`**
+
+* **Intended to only be callable by the VRF wrapper.** There is a bug where all ABIs are public and I am working on to resolve.
+* Internally calls `fulfill_random_words()` → records randomness → freezes participation → calls `decide_winner()` → unfreezes participation.
+* Emits `RequestFulfilled(requestId, randomWords, winner)`.
+
+---
+
+### **Lottery Mechanics**
+
+#### **Participation**
+
+**`participate_in_lottery()`**
+
+* Payable function for participants to send ETH equal to `lottery_entry_fee`.
+* Rejects duplicates or incorrect fees.
+* Temporarily blocked while processing a winner.
+
+#### **Winner Selection**
+
+**`decide_winner(random_words)`**
+
+* Uses modulo of the random word to pick a winner index.
+* Calculates reward as `entry_fee * participant_count`.
+* Calls `mint_distribution_reward(winner, reward)`.
+* Clears participants after reward distribution.
+
+#### **Reward Minting**
+
+**`mint_distribution_reward(recipient, amount)`**
+
+* Calls `mint()` on the ERC20 token contract. (`allowed_minter` (the VRF Consumer) can mint tokens).
+* The ERC20 restricts minting to calls from the verified VRF Consumer to limit minting to prevent manual or exploitative minting.
+
+---
+
+### **Common Integration**
+
+* **ERC20 Token:**  
+  - `mint(address, amount)` — Restricted to the authorized VRF Consumer.  
+  - `set_minter(address)` — Owner-only assignment of the VRF Consumer.  
+  - Standard ERC20 balance, transfer, and allowance functions.
+
+* **VRF Consumer:**  
+  - `set_erc20_token(address)` — Links or updates the ERC20 reward contract (owner-only).  
+  - Lottery setters: `set_lottery_entry_fee(fee)`, `set_lottery_interval_hours(interval)`  
+  - `get_last_fulfilled_id/value()` — Returns verifiable randomness results.  
+  - Emits `RequestFulfilled(requestId, randomWords, winner)` when randomness resolves.
+
+---
+
+### **Core Storage**
+
+```
+VrfConsumer {
+    vrf_wrapper: Address,         // Chainlink VRF V2+ wrapper
+	withdrawing: bool,            // Reentrancy guard
+    last_request_id: U256,        // Latest randomness request
+    last_random_value: U256,      // Last fulfilled random number
+    erc20_token: Address,         // Linked ERC20 reward contract
+    participants: Vec<Address>,   // Current lottery entrants
+    entry_fee: U256,              // Lottery entry fee (in Wei)
+    interval_hours: U256,         // Delay between draws
+    accepting_entries: bool,      // Lottery entry toggle
+    owner: Address,               // Contract owner
+}
+
+RewardToken {
+    name: String,
+    symbol: String,
+    total_supply: U256,
+    balances: Map<Address, U256>,
+    allowed_minter: Address,      // Authorized VRF Consumer
+}
+```
+
+---
+
+### **Error & Safety Handling**
+
+* **Reentrancy Guards:** `withdrawing` and `accepting_participants` flags.
+* **Authorization Checks:** ERC20 only mints from the trusted VRF Consumer.
+* Custom Errors
+
+---
+
+### **Events**
+
+* `RequestFulfilled(requestId, randomWords, winner)`
+(`ParticipantJoined` and `MintedReward` are optional for off-chain monitoring.)
+
+---
+
+### **Design Notes**
+
+* **Provable Fairness:** Chainlink VRF ensures winner selection is unpredictable and tamper-proof.
+* **Closed Mint Authority:** ERC20 rewards depend exclusively on the VRF’s outcome.
+* **Automation-Friendly:** Compatible with Chainlink Automation for periodic execution.
+* **Bytecode-Efficient:** Overflow checks trimmed where safe for Stylus deployment.
+* **Self-Sustaining Loop:** The VRF decides winners → ERC20 mints rewards → Lottery resets for the next round.
+
+---
+
+### **Deployment**
+
+* Both contracts are deployed on Arbitrum Sepolia. Their addresses are as follows:
+  - **VRF Contract: 0xAC96361ff71F185f8E9b7EcC6849f996C615fe06**
+  - **ERC20 Contract: 0x4626FaB1392C9347021dCAe73FEFFd03FE080364**
+* The website is deployed on Vercel and can be accessed at the following URL:
+  - **Frontend: **
+---
+
+### **Challenges**
+
+I was ambitious in scope and had aimed to add the following:
+
+* Proxy contract for upgrades
+* Tests (unit, e2e)
+* Gas optimizations
+
+I was not able to fully complete the assignment. Some features and bugs remain unfinished, but I intend to continue learning and refining this system.
