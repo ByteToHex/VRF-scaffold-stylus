@@ -24,12 +24,13 @@ I spent the most time on the smart contracts, which can be found here:
  - **..\vrf-scaffold-stylus\packages\stylus\erc20-example\src\lib.rs**
  - **..\vrf-scaffold-stylus\packages\stylus\vrf-consumer\src\lib.rs**
  
-There is a lot of functionality that I was unable to include as it would exceed the 24 MiB limit on deployable contracts to the local node/test chain.
+There is a lot of functionality that I was unable to include (commented out) as it would exceed the 24 MiB limit on deployable contracts to the local node/test chain.
 
 #### 1. **Request Random Outcome**
 
 **`request_random_words()`**
 
+* There are some issues with calling request_random_words() from the frontend at the moment; calling the ABI using `cast` is much more reliable.
 * Currently triggered manually, but intended/designed to be triggered periodically by Chainlink Automation.
 * Only callable after `lottery_interval_hours` since last draw.
 * Pays native ETH to the VRF Wrapper, logs a `RequestSent` event, and saves timestamp.
