@@ -259,15 +259,20 @@ impl VrfConsumer {
     }
 
     /// Internal function to decide the winner
-    fn decide_winner(&mut self, random_words: &[U256]) -> Address {
+    fn decide_winner(&mut self, random_words: Vec<U256>) -> Address {
         if self.participants.is_empty() || random_words.is_empty() {
             return Address::ZERO;
         }
-        let idx = (random_words[0] % U256::from(self.participants.len() as u64)).as_usize();
+
+        let len = self.participants.len() as u64;
+        let idx_u64 = (random_words[0] % U256::from(len)).to::<u64>();
+        let idx = idx_u64 as usize;
+    
         let winner = self.participants.get(idx).unwrap_or(Address::ZERO);
+    
         if winner != Address::ZERO {
-            let prize = self.lottery_entry_fee.get() * U256::from(self.participants.len() as u64) * U256::from(85) / U256::from(100);
-            let _ = self.mint_distribution_reward(winner, prize);
+            let reward = self.lottery_entry_fee.get() * U256::from(len) * U256::from(85) / U256::from(100);
+            let _ = self.mint_distribution_reward(winner, reward);
         }
         winner
     }
@@ -290,10 +295,7 @@ impl VrfConsumer {
     
         self.accepting_participants.set(false);
     
-        let winner_address = match self.decide_winner(random_words.clone()) {
-            Ok(addr) => addr,
-            Err(_) => Address::ZERO,
-        };
+        let winner_address = self.decide_winner(random_words.clone());
     
         log(
             self.vm(), // emit the event in the current contract's execution context
