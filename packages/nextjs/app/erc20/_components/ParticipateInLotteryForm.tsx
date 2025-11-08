@@ -69,9 +69,24 @@ export const ParticipateInLotteryForm = ({ contractAddress, contractAbi, onChang
     hash: result,
   });
 
+  // Separate state for request resolution transaction
+  const [resultResolution, setResultResolution] = useState<`0x${string}` | undefined>();
+  const { data: txResultResolution } = useWaitForTransactionReceipt({
+    hash: resultResolution,
+  });
+  const [displayedTxResultResolution, setDisplayedTxResultResolution] = useState<TransactionReceipt>();
+  const [isPendingResolution, setIsPendingResolution] = useState(false);
+
   useEffect(() => {
     setDisplayedTxResult(txResult);
   }, [txResult]);
+
+  useEffect(() => {
+    setDisplayedTxResultResolution(txResultResolution);
+    if (txResultResolution) {
+      setIsPendingResolution(false);
+    }
+  }, [txResultResolution]);
 
   const handleParticipate = async () => {
     if (!isConnected || !address) {
@@ -150,6 +165,53 @@ export const ParticipateInLotteryForm = ({ contractAddress, contractAbi, onChang
     }
   };
 
+  const handleRequestResolution = async () => {
+    if (!isConnected || !address) {
+      notification.error("Please connect your wallet");
+      return;
+    }
+
+    if (!writeContractAsync) {
+      notification.error("Contract not ready. Please wait...");
+      return;
+    }
+
+    setIsPendingResolution(true);
+    try {
+      const writeContractObj: any = {
+        address: contractAddress,
+        functionName: "requestRandomWords",
+        abi: contractAbi,
+        args: [],
+      };
+
+      try {
+        await simulateContractWriteAndNotifyError({
+          wagmiConfig,
+          writeContractParams: writeContractObj,
+          chainId: targetNetwork.id as AllowedChainIds,
+        });
+      } catch (simError: any) {
+        setIsPendingResolution(false);
+        // Re-throw simulation errors to be handled below
+        throw simError;
+      }
+
+      const makeWriteWithParams = async () => {
+        const hash = await writeContractAsync(writeContractObj);
+        setResultResolution(hash);
+        return hash;
+      };
+      await writeTxn(makeWriteWithParams);
+      onChange();
+    } catch (e: any) {
+      setIsPendingResolution(false);
+      console.error("⚡️ ~ file: ParticipateInLotteryForm.tsx:handleRequestResolution ~ error", e);
+      const parsedError = getParsedErrorWithAllAbis(e, targetNetwork.id as AllowedChainIds);
+      notification.error(parsedError);
+    }
+  };
+
   return (
     <div className="py-8 space-y-6 first:pt-0 last:pb-1">
       <div className="flex flex-col gap-6">
@@ -207,7 +269,7 @@ export const ParticipateInLotteryForm = ({ contractAddress, contractAbi, onChang
                 <div>Entry Fee: {hasEntryFee ? "✓ Loaded" : "✗ Loading..."}</div>
               </div>
             )}
-            <div className="flex justify-center">
+            <div className="flex flex-col gap-3 items-center">
               <div
                 className={`flex ${
                   (writeDisabled || !hasEntryFee) &&
@@ -226,6 +288,35 @@ export const ParticipateInLotteryForm = ({ contractAddress, contractAbi, onChang
                   onClick={handleParticipate}
                 >
                   {isPending ? <span className="loading loading-spinner loading-md"></span> : "Participate in Lottery"}
+                </button>
+              </div>
+              {displayedTxResultResolution && (
+                <div className="w-full">
+                  <TxReceipt txResult={displayedTxResultResolution} />
+                </div>
+              )}
+              <div
+                className={`flex ${
+                  writeDisabled &&
+                  "tooltip tooltip-bottom tooltip-secondary before:content-[attr(data-tip)] before:-translate-x-1/3 before:left-auto before:transform-none"
+                }`}
+                data-tip={getTooltipMessage() || undefined}
+              >
+                <button
+                  className="btn btn-secondary btn-lg px-8 py-4 font-bold"
+                  style={{
+                    minWidth: "200px",
+                    minHeight: "60px",
+                    fontSize: "1.5rem",
+                  }}
+                  disabled={writeDisabled || isPendingResolution}
+                  onClick={handleRequestResolution}
+                >
+                  {isPendingResolution ? (
+                    <span className="loading loading-spinner loading-md"></span>
+                  ) : (
+                    "Request Lottery Resolution"
+                  )}
                 </button>
               </div>
             </div>
