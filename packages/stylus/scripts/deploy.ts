@@ -32,12 +32,12 @@ export default async function deployScript(deployOptions: DeployOptions) {
   console.log(`📁 Deployment directory: ${config.deploymentDir}`);
   console.log(`\n`);
 
-  const vrfContractName = "lottery-vrf";
-  const erc20ContractName = "lottery-erc20";
+  const vrfContractName = "vrf-consumer";
+  const erc20ContractName = "erc20-example";
 
   // Deploy a single contract
   const vrfDeployment = await deployStylusContract({
-    contract: "contract-vrf",
+    contract: "vrf-consumer",
     name: vrfContractName,
     constructorArgs: [
       "0x29576aB8152A09b9DC634804e4aDE73dA1f3a3CC", // Hardcoded Arbitrum Sepolia VRF V2+ Wrapper address
@@ -47,7 +47,7 @@ export default async function deployScript(deployOptions: DeployOptions) {
   });
 
   const erc20Deployment = await deployStylusContract({
-    contract: "contract-erc20",
+    contract: "erc20-example",
     name: erc20ContractName,
     constructorArgs: ["LotteryToken", "LUK", "1000000000000000000000000", config.deployerAddress!],
     ...deployOptions,
