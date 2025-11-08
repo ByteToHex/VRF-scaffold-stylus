@@ -244,7 +244,7 @@ export const ParticipateInLotteryForm = ({ contractAddress, contractAbi, onChang
             </p>
             <p className="mb-0">
               Your Ethereum Tokens (ETH) can be used to enter sweepstakes. The reward is denominated in Lottery Token
-              (LUK), which is autimatically awarded every drawing cycle, with winners announced upon VRF fulfillment.
+              (LUK), which is automatically awarded every drawing cycle, with winners announced upon VRF fulfillment.
             </p>
           </div>
         </div>
