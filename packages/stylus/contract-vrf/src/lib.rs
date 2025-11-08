@@ -388,6 +388,7 @@ impl VrfConsumer {
     //     // pass
     // }
 
+    /// Allows the owner to retrieve balances
     // pub fn withdraw_native(&mut self, amount: U256) -> Result<(), Vec<u8>> {
     //     self.ownable.only_owner()?;    
     //     if self.withdrawing.get() {
