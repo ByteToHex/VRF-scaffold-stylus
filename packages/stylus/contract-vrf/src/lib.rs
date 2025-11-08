@@ -327,9 +327,12 @@ impl VrfConsumer {
         self.fulfill_random_words(request_id, random_words)
     }
     
-    /// Get the last fulfilled request ID and value
-    pub fn get_last_fulfilled(&self) -> (U256, U256) {
-        (self.last_fulfilled_id.get(), self.last_fulfilled_value.get())
+    pub fn get_last_fulfilled_id(&self) -> U256 {
+        self.last_fulfilled_id.get()
+    }
+
+    pub fn get_last_fulfilled_value(&self) -> U256 {
+        self.last_fulfilled_value.get()
     }
 
     // /// Withdraw tokens (native or ERC20) If token_address is Address::ZERO, withdraws native tokens
@@ -381,11 +384,12 @@ impl VrfConsumer {
     //     self.last_request_timestamp.get()
     // }
 
-    pub fn owner(&self) -> Address {
-        self.ownable.owner()
-    }
-
     // Getter functions for configuration
+
+    // pub fn owner(&self) -> Address {
+    //     self.ownable.owner()
+    // }
+
     // pub fn callback_gas_limit(&self) -> u32 {
     //     self.callback_gas_limit.get().try_into().unwrap_or(100000)
     // }
@@ -414,19 +418,19 @@ impl VrfConsumer {
     //     Ok(())
     // }
 
-    pub fn get_user_addresses_count(&self) -> U256 {
-        U256::from(self.participants.len())
-    }
+    // pub fn get_user_addresses_count(&self) -> U256 {
+    //     U256::from(self.participants.len())
+    // }
 
-    pub fn get_user_address(&self, index: U256) -> Result<Address, Vec<u8>> {
-        let idx: usize = index.try_into().map_err(|_| b"OOB".to_vec())?;
-        if idx >= self.participants.len() {
-            return Err(b"OOB".to_vec());
-        }
+    // pub fn get_user_address(&self, index: U256) -> Result<Address, Vec<u8>> {
+    //     let idx: usize = index.try_into().map_err(|_| b"OOB".to_vec())?;
+    //     if idx >= self.participants.len() {
+    //         return Err(b"OOB".to_vec());
+    //     }
     
-        self.participants.get(idx)
-            .ok_or_else(|| b"OOB".to_vec())
-    }
+    //     self.participants.get(idx)
+    //         .ok_or_else(|| b"OOB".to_vec())
+    // }
 
     /// Participate in the lottery by paying the entry fee
     /// Takes a flat amount from user's wallet and adds them to participants list
