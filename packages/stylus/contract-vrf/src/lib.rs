@@ -192,6 +192,7 @@ impl VrfConsumer {
     }
 
     pub fn request_random_words(&mut self) -> Result<U256, Vec<u8>> {
+        // let interval_secs = self.lottery_interval_hours.get().checked_mul(U256::from(3600)).ok_or_else(|| b"Interval overflow".to_vec())?; // TODO: Below method can overflow, temporarily unhandled for deployment purposes
         if U256::from(self.vm().block_timestamp())
         < self.last_request_timestamp.get() + self.lottery_interval_hours.get() * U256::from(3600)
         {
@@ -263,13 +264,13 @@ impl VrfConsumer {
         }
 
         let len = self.participants.len() as u64;
-        let idx_u64 = (random_words[0] % U256::from(len)).to::<u64>();
-        let idx = idx_u64 as usize;
+        let idx = (random_words[0] % U256::from(len)).try_into().unwrap_or(0u64) as usize; // Will never overflow in practice but try_into() can hide bugs
     
         let winner = self.participants.get(idx).unwrap_or(Address::ZERO);
     
         if winner != Address::ZERO {
-            let reward = self.lottery_entry_fee.get() * U256::from(len); //* U256::from(85) / U256::from(100);
+            let reward = self.lottery_entry_fee.get() * U256::from(len); 
+            // let reward = self.lottery_entry_fee.get().checked_mul(U256::from(len)).unwrap_or(U256::MAX); // TODO: Above method can overflow, but contract is too big to deploy if I handle it; risk possibility of user getting low rewards for now
             let _ = self.mint_distribution_reward(winner, reward);
             while !self.participants.is_empty() {
                 let _ = self.participants.pop();
