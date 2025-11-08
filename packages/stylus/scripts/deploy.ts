@@ -32,10 +32,13 @@ export default async function deployScript(deployOptions: DeployOptions) {
   console.log(`📁 Deployment directory: ${config.deploymentDir}`);
   console.log(`\n`);
 
+  const vrfContractName = "lottery-vrf";
+  const erc20ContractName = "lottery-erc20";
+
   // Deploy a single contract
   const vrfDeployment = await deployStylusContract({
     contract: "contract-vrf",
-    name: "vrf-consumer",
+    name: vrfContractName,
     constructorArgs: [
       "0x29576aB8152A09b9DC634804e4aDE73dA1f3a3CC", // Hardcoded Arbitrum Sepolia VRF V2+ Wrapper address
       config.deployerAddress!,
@@ -45,8 +48,8 @@ export default async function deployScript(deployOptions: DeployOptions) {
 
   const erc20Deployment = await deployStylusContract({
     contract: "contract-erc20",
-    name: "lottery-erc20",
-    constructorArgs: ["Lotto", "LUK", "1000000000000000000000000", config.deployerAddress!],
+    name: erc20ContractName,
+    constructorArgs: ["LotteryToken", "LUK", "1000000000000000000000000", config.deployerAddress!],
     ...deployOptions,
   });
 
@@ -72,7 +75,7 @@ export default async function deployScript(deployOptions: DeployOptions) {
     const account = privateKeyToAccount(config.privateKey as `0x${string}`);
 
     await executeContractFunction({
-      contractName: "BLSToken",
+      contractName: erc20ContractName,
       contractAddress: erc20Deployment.address,
       functionName: "setAuthorizedMinter",
       args: [vrfDeployment.address],
@@ -84,9 +87,9 @@ export default async function deployScript(deployOptions: DeployOptions) {
       errorMessage: "Failed to set authorized minter",
     });    
     await executeContractFunction({
-      contractName: "vrf-consumer",
+      contractName: vrfContractName,
       contractAddress: vrfDeployment.address,
-      functionName: "set_erc20_token",
+      functionName: "setErc20Token",
       args: [erc20Deployment.address],
       account,
       publicClient,
@@ -122,7 +125,7 @@ export default async function deployScript(deployOptions: DeployOptions) {
 
   // Print the deployed addresses
   console.log("\n\n");
-  printDeployedAddresses(config.deploymentDir, config.chain.id.toString());
+  printDeployedAddresses(config.deploymentDir, config.chain.id.toString()); //Keep or Eslint will complain
 }
 
 async function executeContractFunction({
