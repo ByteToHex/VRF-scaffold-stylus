@@ -2,7 +2,7 @@
 
 import { useMemo, useReducer } from "react";
 import { useTheme } from "next-themes";
-import { Address, Balance } from "~~/components/scaffold-eth";
+import { Address } from "~~/components/scaffold-eth";
 import { useTargetNetwork } from "~~/hooks/scaffold-eth/useTargetNetwork";
 import { BalanceOfDisplay } from "./BalanceOfDisplay";
 import { LotteryEntryFeeDisplay } from "./LotteryEntryFeeDisplay";
@@ -65,7 +65,7 @@ export const ERC20Interactions = () => {
               }}
             >
               <div className="flex flex-col gap-4 w-full">
-                {/* Contract Title */}
+                {/* Title */}
                 <div
                   style={{
                     color: isDarkMode ? "#30B4ED" : "#30B4ED",
@@ -73,45 +73,36 @@ export const ERC20Interactions = () => {
                     fontWeight: "bold",
                   }}
                 >
-                  {ERC20_CONTRACT_NAME}
+                  Lottery Token (LUK)
                 </div>
 
-                <Address address={erc20ContractData.address} onlyEnsOrAddress />
-
-                {/* Balance */}
-                <div className="flex items-center gap-2">
+                {/* VRF Contract Address */}
+                <div className="flex flex-col gap-1">
                   <span
                     style={{
-                      color: isDarkMode ? "white" : "black",
-                      fontWeight: "bold",
+                      color: isDarkMode ? "rgba(255, 255, 255, 0.7)" : "rgba(0, 0, 0, 0.7)",
+                      fontSize: "0.875rem",
+                      fontWeight: "500",
                     }}
                   >
-                    Balance:
+                    VRF Contract:
                   </span>
-                  <Balance address={erc20ContractData.address} className="px-0 h-1.5 min-h-[0.375rem]" />
+                  <Address address={vrfContractData.address} onlyEnsOrAddress />
                 </div>
 
-                {/* Network */}
-                {targetNetwork && (
-                  <div className="flex items-center gap-2">
-                    <span
-                      style={{
-                        color: isDarkMode ? "white" : "black",
-                        fontWeight: "bold",
-                      }}
-                    >
-                      Network:
-                    </span>
-                    <span
-                      style={{
-                        color: isDarkMode ? "#FF50A2" : "rgba(227, 6, 110, 1)",
-                        fontSize: "14px",
-                      }}
-                    >
-                      {targetNetwork.name}
-                    </span>
-                  </div>
-                )}
+                {/* ERC20 Contract Address */}
+                <div className="flex flex-col gap-1">
+                  <span
+                    style={{
+                      color: isDarkMode ? "rgba(255, 255, 255, 0.7)" : "rgba(0, 0, 0, 0.7)",
+                      fontSize: "0.875rem",
+                      fontWeight: "500",
+                    }}
+                  >
+                    ERC20 Contract:
+                  </span>
+                  <Address address={erc20ContractData.address} onlyEnsOrAddress />
+                </div>
               </div>
             </div>
 
