@@ -25,15 +25,14 @@ const VRFInteractions = () => {
     contractName: "vrf-consumer",
   });
 
-  const { data: lastRequestId, refetch: refetchLastRequestId } = useScaffoldReadContract({
+  const { data: lastFulfilledId, refetch: refetchLastFulfilledId } = useScaffoldReadContract({
     contractName: "vrf-consumer",
-    functionName: "getLastRequestId",
+    functionName: "getLastFulfilledId",
   });
 
-  const { data: requestStatus, refetch: refetchStatus } = useScaffoldReadContract({
+  const { data: lastFulfilledValue, refetch: refetchLastFulfilledValue } = useScaffoldReadContract({
     contractName: "vrf-consumer",
-    functionName: "getRequestStatus",
-    args: [lastRequestId ? BigInt(lastRequestId) : undefined],
+    functionName: "getLastFulfilledValue",
     watch: true,
   });
 
@@ -64,7 +63,7 @@ const VRFInteractions = () => {
   const handleRequest = async () => {
     try {
       await requestRandomWords({ functionName: "requestRandomWords" });
-      await Promise.all([refetchLastRequestId(), refetchStatus(), refetchBalance()]);
+      await Promise.all([refetchLastFulfilledId(), refetchLastFulfilledValue(), refetchBalance()]);
     } catch (e) {
       // errors surfaced by wagmi notifications
     }
@@ -169,13 +168,13 @@ const VRFInteractions = () => {
 
           <div className="grid gap-3">
             <div className="bg-base-200 p-3 rounded-lg">
-              <div className="text-xs text-base-content/70">Latest Request ID</div>
+              <div className="text-xs text-base-content/70">Last Fulfilled ID</div>
               <div className="flex items-center justify-between mt-1 gap-2">
                 <code className="text-sm bg-base-300 px-2 py-1 rounded select-all cursor-pointer whitespace-nowrap overflow-x-auto max-w-full">
-                  {lastRequestId ? lastRequestId.toString() : "—"}
+                  {lastFulfilledId ? lastFulfilledId.toString() : "—"}
                 </code>
                 <div className="flex items-center gap-1">
-                  <button className="btn btn-xs btn-ghost" onClick={() => refetchLastRequestId()} title="Refresh">
+                  <button className="btn btn-xs btn-ghost" onClick={() => refetchLastFulfilledId()} title="Refresh">
                     🔄
                   </button>
                 </div>
@@ -185,16 +184,16 @@ const VRFInteractions = () => {
             <div className="bg-base-200 p-3 rounded-lg">
               <div className="text-xs text-base-content/70">Fulfilled</div>
               <div className="mt-1">
-                <span className={`badge ${requestStatus && requestStatus[1] ? "badge-success" : "badge-warning"}`}>
-                  {requestStatus && requestStatus[1] ? "Yes" : "Pending"}
+                <span className={`badge ${lastFulfilledId ? "badge-success" : "badge-warning"}`}>
+                  {lastFulfilledId ? "Yes" : "Pending"}
                 </span>
               </div>
             </div>
 
             <div className="bg-base-200 p-3 rounded-lg">
-              <div className="text-xs text-base-content/70">Random Number</div>
+              <div className="text-xs text-base-content/70">Last Fulfilled Random Value</div>
               <code className="text-sm bg-base-300 px-2 py-1 rounded select-all cursor-pointer mt-1 block whitespace-nowrap overflow-x-auto">
-                {requestStatus && requestStatus[2] ? requestStatus[2].toString() : "—"}
+                {lastFulfilledValue ? lastFulfilledValue.toString() : "—"}
               </code>
             </div>
           </div>

@@ -33,15 +33,14 @@ const VRFPage: NextPage = () => {
     contractName: "vrf-consumer",
   });
 
-  const { data: lastRequestId, refetch: refetchLastRequestId } = useScaffoldReadContract({
+  const { data: lastFulfilledId, refetch: refetchLastFulfilledId } = useScaffoldReadContract({
     contractName: "vrf-consumer",
-    functionName: "getLastRequestId",
+    functionName: "getLastFulfilledId",
   });
 
-  const { data: requestStatus } = useScaffoldReadContract({
+  const { data: lastFulfilledValue } = useScaffoldReadContract({
     contractName: "vrf-consumer",
-    functionName: "getRequestStatus",
-    args: [lastRequestId ? BigInt(lastRequestId) : undefined],
+    functionName: "getLastFulfilledValue",
     watch: true,
   });
 
@@ -56,8 +55,8 @@ const VRFPage: NextPage = () => {
   };
 
   const handleCheckStatus = () => {
-    if (lastRequestId) {
-      setRequestId(lastRequestId.toString());
+    if (lastFulfilledId) {
+      setRequestId(lastFulfilledId.toString());
     }
   };
 
