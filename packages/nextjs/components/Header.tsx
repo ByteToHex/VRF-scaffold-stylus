@@ -5,7 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { SwitchTheme } from "./SwitchTheme";
-import { Bars3Icon, ArrowPathIcon, BugAntIcon } from "@heroicons/react/24/outline";
+import { Bars3Icon, BugAntIcon } from "@heroicons/react/24/outline";
 import { RainbowKitCustomConnectButton } from "~~/components/scaffold-eth";
 import { useOutsideClick, useTargetNetwork } from "~~/hooks/scaffold-eth";
 import { arbitrumNitro } from "~~/utils/scaffold-stylus/supportedChains";
@@ -18,18 +18,9 @@ type HeaderMenuLink = {
 
 export const menuLinks: HeaderMenuLink[] = [
   {
-    label: "Home",
-    href: "/",
-  },
-  {
     label: "Debug Contracts",
     href: "/debug",
     icon: <BugAntIcon className="h-4 w-4" />,
-  },
-  {
-    label: "VRF",
-    href: "/vrf",
-    icon: <ArrowPathIcon className="h-4 w-4" />,
   },
 ];
 
