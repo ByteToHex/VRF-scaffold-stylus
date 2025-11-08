@@ -192,11 +192,9 @@ impl VrfConsumer {
     }
 
     pub fn request_random_words(&mut self) -> Result<U256, Vec<u8>> {
-        let block_timestamp = U256::from(self.vm().block_timestamp());
-        let last_timestamp = self.last_request_timestamp.get();
-        let lottery_interval_hours = self.lottery_interval_hours.get();
-        let lottery_interval_seconds = lottery_interval_hours * U256::from(3600);
-        if block_timestamp < last_timestamp + lottery_interval_seconds {
+        if U256::from(self.vm().block_timestamp())
+        < self.last_request_timestamp.get() + self.lottery_interval_hours.get() * U256::from(3600)
+        {
             return Err(b"Too soon".to_vec());
         }
     
@@ -210,7 +208,7 @@ impl VrfConsumer {
             num_words,
         )?;
 
-        self.last_request_timestamp.set(block_timestamp);
+        self.last_request_timestamp.set(U256::from(self.vm().block_timestamp()));
     
         log(
             self.vm(),
@@ -291,8 +289,7 @@ impl VrfConsumer {
         };
         
         self.last_fulfilled_id.set(request_id);
-        self.last_fulfilled_value.set(fulfilled_value);
-    
+        self.last_fulfilled_value.set(fulfilled_value);    
         self.accepting_participants.set(false);
     
         let winner_address = self.decide_winner(random_words.clone());
@@ -381,9 +378,9 @@ impl VrfConsumer {
     //     self.withdraw(amount, token_address)
     // }
 
-    pub fn last_request_timestamp(&self) -> U256 {
-        self.last_request_timestamp.get()
-    }
+    // pub fn last_request_timestamp(&self) -> U256 {
+    //     self.last_request_timestamp.get()
+    // }
 
     pub fn owner(&self) -> Address {
         self.ownable.owner()
@@ -443,9 +440,9 @@ impl VrfConsumer {
         // Check if participant already exists by iterating through the list
         let msg_sender = self.vm().msg_sender();
         for i in 0..self.participants.len() {
-                if self.participants.get(i) == Some(msg_sender) {
-                    return Err(b"Already participating".to_vec());
-                }
+            if self.participants.get(i) == Some(msg_sender) {
+                return Err(b"Already participating".to_vec());
+            }
         }
         // Get the required entry fee
         let entry_fee = self.lottery_entry_fee.get();
