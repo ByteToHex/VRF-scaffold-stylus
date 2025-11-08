@@ -51,7 +51,7 @@ There is a lot of functionality that I was unable to include (commented out) as 
   - **VRF Contract: 0xAC96361ff71F185f8E9b7EcC6849f996C615fe06**
   - **ERC20 Contract: 0x4626FaB1392C9347021dCAe73FEFFd03FE080364**
 * The website is deployed on Vercel and can be accessed at the following URL:
-  - **Frontend: **
+  - **Frontend: https://vrf-scaffold-stylus-nextjs.vercel.app/**
   
 ---
 
