@@ -1,0 +1,23 @@
+{
+  "chainId": "local",
+  "rpcUrl": "http://127.0.0.1:8547",
+  "deployer": "0x3f1Eae7D46d88F08fc2F8ed27FCb2AB183EB2d0E",
+  "deployedAt": "2025-11-09T11:02:43Z",
+  "contracts": {
+    "MockVRFV2PlusWrapper": {
+      "address": "0x75E0E92A79880Bd81A69F72983D03c75e2B33dC8",
+      "abi": "deployments/abis/MockVRFV2PlusWrapper.json"
+    },
+    "ERC20Example": {
+      "address": "0xF5FfD11A55AFD39377411Ab9856474D2a7Cb697e",
+      "abi": "deployments/abis/ERC20Example.json",
+      "name": "LotteryToken",
+      "symbol": "LUK",
+      "cap": "1000000000000000000000000"
+    },
+    "VrfConsumer": {
+      "address": "0x408Da76E87511429485C32E4Ad647DD14823Fdc4",
+      "abi": "deployments/abis/VrfConsumer.json"
+    }
+  }
+}

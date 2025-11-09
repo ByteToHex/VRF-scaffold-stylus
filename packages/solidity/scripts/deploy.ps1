@@ -59,9 +59,15 @@ if (-not $MOCK_VRF) {
 
 Write-Host "✅ MockVRFV2PlusWrapper deployed at: $MOCK_VRF" -ForegroundColor Green
 
-# Export Mock VRF ABI
-forge inspect test/mocks/MockVRFV2PlusWrapper.sol:MockVRFV2PlusWrapper abi | Out-File -FilePath "$ABI_DIR/MockVRFV2PlusWrapper.json" -Encoding utf8
-Write-Host "✅ Exported MockVRFV2PlusWrapper ABI" -ForegroundColor Green
+# Export Mock VRF ABI (extract from compiled JSON)
+$mockVrfAbiPath = "out/MockVRFV2PlusWrapper.sol/MockVRFV2PlusWrapper.json"
+if (Test-Path $mockVrfAbiPath) {
+  $mockVrfJson = Get-Content $mockVrfAbiPath | ConvertFrom-Json
+  $mockVrfJson.abi | ConvertTo-Json -Depth 100 | Out-File -FilePath "$ABI_DIR/MockVRFV2PlusWrapper.json" -Encoding utf8
+  Write-Host "✅ Exported MockVRFV2PlusWrapper ABI" -ForegroundColor Green
+} else {
+  Write-Host "⚠️  Could not find compiled ABI at $mockVrfAbiPath" -ForegroundColor Yellow
+}
 Write-Host ""
 
 # Deploy ERC20Example
@@ -81,9 +87,15 @@ if (-not $ERC20) {
 
 Write-Host "✅ ERC20Example deployed at: $ERC20" -ForegroundColor Green
 
-# Export ERC20 ABI
-forge inspect contracts/ERC20Example.sol:ERC20Example abi | Out-File -FilePath "$ABI_DIR/ERC20Example.json" -Encoding utf8
-Write-Host "✅ Exported ERC20Example ABI" -ForegroundColor Green
+# Export ERC20 ABI (extract from compiled JSON)
+$erc20AbiPath = "out/ERC20Example.sol/ERC20Example.json"
+if (Test-Path $erc20AbiPath) {
+  $erc20Json = Get-Content $erc20AbiPath | ConvertFrom-Json
+  $erc20Json.abi | ConvertTo-Json -Depth 100 | Out-File -FilePath "$ABI_DIR/ERC20Example.json" -Encoding utf8
+  Write-Host "✅ Exported ERC20Example ABI" -ForegroundColor Green
+} else {
+  Write-Host "⚠️  Could not find compiled ABI at $erc20AbiPath" -ForegroundColor Yellow
+}
 Write-Host ""
 
 # Deploy VrfConsumer
@@ -103,9 +115,15 @@ if (-not $VRF) {
 
 Write-Host "✅ VrfConsumer deployed at: $VRF" -ForegroundColor Green
 
-# Export VrfConsumer ABI
-forge inspect contracts/VrfConsumer.sol:VrfConsumer abi | Out-File -FilePath "$ABI_DIR/VrfConsumer.json" -Encoding utf8
-Write-Host "✅ Exported VrfConsumer ABI" -ForegroundColor Green
+# Export VrfConsumer ABI (extract from compiled JSON)
+$vrfAbiPath = "out/VrfConsumer.sol/VrfConsumer.json"
+if (Test-Path $vrfAbiPath) {
+  $vrfJson = Get-Content $vrfAbiPath | ConvertFrom-Json
+  $vrfJson.abi | ConvertTo-Json -Depth 100 | Out-File -FilePath "$ABI_DIR/VrfConsumer.json" -Encoding utf8
+  Write-Host "✅ Exported VrfConsumer ABI" -ForegroundColor Green
+} else {
+  Write-Host "⚠️  Could not find compiled ABI at $vrfAbiPath" -ForegroundColor Yellow
+}
 Write-Host ""
 
 # Configure contracts

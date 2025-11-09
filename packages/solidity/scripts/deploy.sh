@@ -58,8 +58,13 @@ fi
 
 echo "✅ MockVRFV2PlusWrapper deployed at: $MOCK_VRF"
 
-# Export Mock VRF ABI
-forge inspect test/mocks/MockVRFV2PlusWrapper.sol:MockVRFV2PlusWrapper abi > $ABI_DIR/MockVRFV2PlusWrapper.json
+# Export Mock VRF ABI (extract from compiled JSON)
+if [ -f "out/MockVRFV2PlusWrapper.sol/MockVRFV2PlusWrapper.json" ]; then
+  jq '.abi' out/MockVRFV2PlusWrapper.sol/MockVRFV2PlusWrapper.json > $ABI_DIR/MockVRFV2PlusWrapper.json 2>/dev/null || \
+  python3 -c "import json; print(json.dumps(json.load(open('out/MockVRFV2PlusWrapper.sol/MockVRFV2PlusWrapper.json'))['abi']))" > $ABI_DIR/MockVRFV2PlusWrapper.json 2>/dev/null || \
+  node -e "console.log(JSON.stringify(require('./out/MockVRFV2PlusWrapper.sol/MockVRFV2PlusWrapper.json').abi, null, 2))" > $ABI_DIR/MockVRFV2PlusWrapper.json 2>/dev/null || \
+  echo "⚠️  Could not extract ABI automatically. Please extract manually from out/MockVRFV2PlusWrapper.sol/MockVRFV2PlusWrapper.json"
+fi
 echo "✅ Exported MockVRFV2PlusWrapper ABI"
 echo ""
 
@@ -80,8 +85,13 @@ fi
 
 echo "✅ ERC20Example deployed at: $ERC20"
 
-# Export ERC20 ABI
-forge inspect contracts/ERC20Example.sol:ERC20Example abi > $ABI_DIR/ERC20Example.json
+# Export ERC20 ABI (extract from compiled JSON)
+if [ -f "out/ERC20Example.sol/ERC20Example.json" ]; then
+  jq '.abi' out/ERC20Example.sol/ERC20Example.json > $ABI_DIR/ERC20Example.json 2>/dev/null || \
+  python3 -c "import json; print(json.dumps(json.load(open('out/ERC20Example.sol/ERC20Example.json'))['abi']))" > $ABI_DIR/ERC20Example.json 2>/dev/null || \
+  node -e "console.log(JSON.stringify(require('./out/ERC20Example.sol/ERC20Example.json').abi, null, 2))" > $ABI_DIR/ERC20Example.json 2>/dev/null || \
+  echo "⚠️  Could not extract ABI automatically. Please extract manually from out/ERC20Example.sol/ERC20Example.json"
+fi
 echo "✅ Exported ERC20Example ABI"
 echo ""
 
@@ -102,8 +112,13 @@ fi
 
 echo "✅ VrfConsumer deployed at: $VRF"
 
-# Export VrfConsumer ABI
-forge inspect contracts/VrfConsumer.sol:VrfConsumer abi > $ABI_DIR/VrfConsumer.json
+# Export VrfConsumer ABI (extract from compiled JSON)
+if [ -f "out/VrfConsumer.sol/VrfConsumer.json" ]; then
+  jq '.abi' out/VrfConsumer.sol/VrfConsumer.json > $ABI_DIR/VrfConsumer.json 2>/dev/null || \
+  python3 -c "import json; print(json.dumps(json.load(open('out/VrfConsumer.sol/VrfConsumer.json'))['abi']))" > $ABI_DIR/VrfConsumer.json 2>/dev/null || \
+  node -e "console.log(JSON.stringify(require('./out/VrfConsumer.sol/VrfConsumer.json').abi, null, 2))" > $ABI_DIR/VrfConsumer.json 2>/dev/null || \
+  echo "⚠️  Could not extract ABI automatically. Please extract manually from out/VrfConsumer.sol/VrfConsumer.json"
+fi
 echo "✅ Exported VrfConsumer ABI"
 echo ""
 
