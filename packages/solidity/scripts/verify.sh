@@ -154,7 +154,7 @@ if [ $# -ge 2 ]; then
   verify_contract "$CONTRACT_ADDRESS" "$CONTRACT_NAME" "$CONSTRUCTOR_ARGS"
 else
   # Called without arguments: verify all contracts from deployment info
-  DEPLOYMENT_INFO="deployments/deployment_info.json"
+  DEPLOYMENT_INFO="../stylus/deployments/deployment_info.json"
   
   if [ ! -f "$DEPLOYMENT_INFO" ]; then
     echo "⚠️  Deployment info not found: $DEPLOYMENT_INFO"

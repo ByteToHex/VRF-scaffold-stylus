@@ -1,11 +1,11 @@
 #!/bin/bash
 
 # Script to export ABIs from compiled contracts
-# This extracts ABIs from the out/ directory and saves them to deployments/abis/
+# This extracts ABIs from the out/ directory and saves them to ../stylus/deployments/abis/
 
 set -e
 
-ABI_DIR="deployments/abis"
+ABI_DIR="../stylus/deployments/abis"
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 PROJECT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 

@@ -91,8 +91,8 @@ fi
 RPC_URL=${RPC_URL:-http://127.0.0.1:8547}
 PRIVATE_KEY=${PRIVATE_KEY:-0xb6b15c8cb491557369f3c7d2c287b053eb229daa9c22138887752191c9520659}
 OWNER_ADDRESS=$(cast wallet address $PRIVATE_KEY)
-ABI_DIR="deployments/abis"
-DEPLOYMENT_DIR="deployments"
+ABI_DIR="../stylus/deployments/abis"
+DEPLOYMENT_DIR="../stylus/deployments"
 
 # Get chain ID (use CHAIN_ID env var if set, otherwise query from RPC)
 if [ -z "$CHAIN_ID" ]; then
@@ -325,18 +325,18 @@ cat > $DEPLOYMENT_INFO <<EOF
   "contracts": {
     "MockVRFV2PlusWrapper": {
       "address": "$MOCK_VRF",
-      "abi": "$ABI_DIR/MockVRFV2PlusWrapper.json"
+      "abi": "abis/MockVRFV2PlusWrapper.json"
     },
     "ERC20Example": {
       "address": "$ERC20",
-      "abi": "$ABI_DIR/ERC20Example.json",
+      "abi": "abis/ERC20Example.json",
       "name": "$TOKEN_NAME",
       "symbol": "$TOKEN_SYMBOL",
       "cap": "$TOKEN_CAP"
     },
     "VrfConsumer": {
       "address": "$VRF",
-      "abi": "$ABI_DIR/VrfConsumer.json"
+      "abi": "abis/VrfConsumer.json"
     }
   }
 }

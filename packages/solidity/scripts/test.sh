@@ -6,7 +6,7 @@
 set -e
 
 # Load deployment info if available
-DEPLOYMENT_INFO="deployments/deployment_info.json"
+DEPLOYMENT_INFO="../stylus/deployments/deployment_info.json"
 RPC_URL=${RPC_URL:-http://127.0.0.1:8547}
 PRIVATE_KEY=${PRIVATE_KEY:-0xb6b15c8cb491557369f3c7d2c287b053eb229daa9c22138887752191c9520659}
 OWNER_ADDRESS=$(cast wallet address $PRIVATE_KEY)
@@ -154,6 +154,6 @@ echo ""
 echo "For more advanced testing:"
 echo "  1. Use cast send/call to interact with contracts"
 echo "  2. Check deployment_info.json for contract addresses"
-echo "  3. Use ABIs in deployments/abis/ for frontend integration"
+echo "  3. Use ABIs in ../stylus/deployments/abis/ for frontend integration"
 echo ""
 
