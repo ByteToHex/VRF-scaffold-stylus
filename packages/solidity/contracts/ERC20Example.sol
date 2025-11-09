@@ -5,20 +5,18 @@ import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import {ERC20Burnable} from "@openzeppelin/contracts/token/ERC20/extensions/ERC20Burnable.sol";
 import {ERC20Capped} from "@openzeppelin/contracts/token/ERC20/extensions/ERC20Capped.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
+import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 
 /**
  * @title ERC20Example
  * @dev ERC20 token with metadata, capped supply, burnable functionality, and authorized minter
  * This contract matches the functionality of the Stylus Rust erc20-example contract
  */
-contract ERC20Example is ERC20, ERC20Burnable, ERC20Capped, Ownable {
+contract ERC20Example is ERC20, ERC20Burnable, ERC20Capped, Ownable, ReentrancyGuard {
     uint8 private constant DECIMALS_VALUE = 10;
     
     // Authorized minter address (in addition to owner)
     address public authorizedMinter;
-    
-    // Reentrancy guard for minting
-    bool private minting;
 
     /**
      * @dev Constructor that initializes the token
@@ -42,10 +40,7 @@ contract ERC20Example is ERC20, ERC20Burnable, ERC20Capped, Ownable {
      * @param account Address to mint tokens to
      * @param value Amount of tokens to mint
      */
-    function mint(address account, uint256 value) external {
-        require(!minting, "ERC20Example: minting in progress");
-        minting = true;
-
+    function mint(address account, uint256 value) external nonReentrant {
         address caller = msg.sender;
         address tokenOwner = owner();
         
@@ -61,7 +56,6 @@ contract ERC20Example is ERC20, ERC20Burnable, ERC20Capped, Ownable {
         require(newSupply <= maxSupply, "ERC20Example: cap exceeded");
 
         _mint(account, value);
-        minting = false;
     }
 
     /**

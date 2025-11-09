@@ -2,6 +2,7 @@
 pragma solidity ^0.8.20;
 
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
+import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 
 // VRF V2+ Wrapper interface
 interface IVRFV2PlusWrapper {
@@ -30,7 +31,7 @@ interface IERC20 {
  * pay an entry fee and a winner is selected using VRF randomness.
  * This contract matches the functionality of the Stylus Rust vrf-consumer contract
  */
-contract VrfConsumer is Ownable {
+contract VrfConsumer is Ownable, ReentrancyGuard {
 
     // VRF variables
     address public iVrfV2PlusWrapper;
@@ -142,14 +143,15 @@ contract VrfConsumer is Ownable {
         // forge-lint: disable-next-line(unsafe-typecast)
         uint32 numWordsValue = uint32(numWords);
 
+        // Update state BEFORE external call (Checks-Effects-Interactions pattern)
+        lastRequestTimestamp = block.timestamp;
+
         uint256 reqPrice;
         (requestId, reqPrice) = requestRandomnessPayInNative(
             callbackGasLimitValue,
             requestConfirmationsValue,
             numWordsValue
         );
-
-        lastRequestTimestamp = block.timestamp;
 
         emit RequestSent(requestId, numWordsValue, reqPrice);
 
@@ -231,7 +233,7 @@ contract VrfConsumer is Ownable {
     function rawFulfillRandomWords(
         uint256 requestId,
         uint256[] memory randomWords
-    ) external {
+    ) external nonReentrant {
         if (msg.sender != iVrfV2PlusWrapper) {
             revert OnlyVRFWrapperCanFulfill(msg.sender, iVrfV2PlusWrapper);
         }
@@ -260,6 +262,7 @@ contract VrfConsumer is Ownable {
      * @param tokenAddress Address of the ERC20 token contract
      */
     function setErc20Token(address tokenAddress) external onlyOwner {
+        require(tokenAddress != address(0), "Token address cannot be zero");
         erc20TokenAddress = tokenAddress;
     }
 
@@ -267,7 +270,7 @@ contract VrfConsumer is Ownable {
      * @dev Participate in the lottery by paying the entry fee
      * Takes a flat amount from user's wallet and adds them to participants list
      */
-    function participateInLottery() external payable {
+    function participateInLottery() external payable nonReentrant {
         require(acceptingParticipants, "Not accepting participants");
 
         address msgSender = msg.sender;
