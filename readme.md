@@ -1,5 +1,35 @@
 ## **Stylus VRF Consumer Lottery & ERC20 Reward System**
 
+### **2025-11-09 Updates**
+
+In an effort to improve deployment efficiency and security, the contracts were migrated from **Rust/Stylus** to **Solidity**. This migration has several significant improvements:
+
+**Migration to Solidity & Foundry:**
+- The entire contract system was rewritten in Solidity, replacing the original Rust/Stylus implementation
+- **Foundry** was adopted as the compilation framework, which provided **much faster deployment times** compared to the Stylus toolchain
+- The Solidity contracts can be found in `packages/solidity/contracts/`:
+  - `VrfConsumer.sol` - Main VRF consumer contract implementing the lottery system
+  - `ERC20Example.sol` - ERC20 token contract for reward distribution
+
+**Security Enhancements:**
+- The Solidity implementation uses **OpenZeppelin standards** for enhanced security:
+  - `Ownable` for access control
+  - `ReentrancyGuard` for protection against reentrancy attacks
+  - `ERC20`, `ERC20Burnable`, and `ERC20Capped` for token functionality
+- A test suite was developed using Foundry, including:
+  - End-to-end tests (`VrfConsumerE2E.t.sol`)
+  - Integration tests (`VrfConsumerIntegration.t.sol`)
+  - Reentrancy protection tests (`VrfConsumerReentrancy.t.sol`)
+
+**Frontend Adaptation:**
+- The frontend has been updated to interact with the new Solidity contracts
+- All contract interactions now use the Solidity ABI instead of the Stylus interface
+
+**Known Issue:**
+- Despite the migration and improvements, **the bug where VRF requests are never fulfilled by ChainLink still remains unresolved**. Requests are successfully sent to the VRF wrapper, but the `rawFulfillRandomWords` callback is never triggered by ChainLink's oracle network. This issue persists across both the original Stylus deployment and the new Solidity version. It may be related to underlying VRF wrapper configuration or network-specific ChainLink setup.
+
+---
+
 ### **Purpose**
 
 This project implements a **provably fair on-chain lottery** using **Chainlink VRF V2+** and **Stylus (Arbitrum)**.
