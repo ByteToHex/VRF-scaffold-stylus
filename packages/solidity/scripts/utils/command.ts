@@ -27,7 +27,7 @@ export async function buildDeployCommand(
   }
 
   // Build forge create command
-  let baseCommand = `forge create src/${contractName}.sol:${contractName} --rpc-url ${rpcUrl} --private-key ${privateKey}`;
+  let baseCommand = `forge create src/${contractName}.sol:${contractName} --rpc-url ${rpcUrl} --private-key ${privateKey} --json`;
 
   if (deployOptions.estimateGas) {
     baseCommand += " --gas-estimate-multiplier 200";

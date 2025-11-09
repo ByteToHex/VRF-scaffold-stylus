@@ -112,11 +112,54 @@ export function generateContractAddress(): string {
 }
 
 export function extractDeploymentInfo(output: string): DeploymentData | null {
+  // First, try to parse as JSON (if --json flag was used)
+  try {
+    // Try to parse the entire output as JSON first
+    const trimmedOutput = output.trim();
+    const jsonOutput = JSON.parse(trimmedOutput);
+    
+    // Foundry JSON format has:
+    // - deployedTo: contract address
+    // - transactionHash or hash: transaction hash
+    const address = jsonOutput.deployedTo || jsonOutput.result?.deployedTo;
+    const txHash = jsonOutput.transactionHash || jsonOutput.hash || jsonOutput.result?.transactionHash || jsonOutput.result?.hash || "";
+    
+    if (address) {
+      return {
+        address: address as Address,
+        txHash: txHash,
+      };
+    }
+  } catch (e) {
+    // If full output isn't JSON, try to find JSON object in the output
+    // Look for lines that might contain JSON with "deployedTo"
+    const lines = output.split("\n");
+    for (const line of lines) {
+      const trimmedLine = line.trim();
+      if (trimmedLine.startsWith("{") && trimmedLine.includes("deployedTo")) {
+        try {
+          const jsonOutput = JSON.parse(trimmedLine);
+          const address = jsonOutput.deployedTo || jsonOutput.result?.deployedTo;
+          const txHash = jsonOutput.transactionHash || jsonOutput.hash || jsonOutput.result?.transactionHash || jsonOutput.result?.hash || "";
+          
+          if (address) {
+            return {
+              address: address as Address,
+              txHash: txHash,
+            };
+          }
+        } catch (e2) {
+          // This line isn't valid JSON, continue
+        }
+      }
+    }
+  }
+
   let result: DeploymentData | null = null;
   const lines = output.split("\n");
   let deployerAddress: string | null = null;
   
-  // First, try to extract from standard Foundry text format
+  // Try to extract from standard Foundry text format (fallback)
   for (const line of lines) {
     // Foundry output format: "Deployed to: 0x..."
     if (line.includes("Deployed to:") || line.includes("deployed to:")) {
