@@ -119,14 +119,16 @@ contract VrfConsumer is Ownable, ReentrancyGuard {
      */
     function requestRandomWords() external returns (uint256 requestId) {
         // Check if enough time has passed since last request
-        // Allow first call when lastRequestTimestamp is 0
-        if (lastRequestTimestamp > 0) {
-            uint256 intervalSecs = lotteryIntervalHours * 3600;
-            require(
-                block.timestamp >= lastRequestTimestamp + intervalSecs,
-                "Too soon to resolve lottery"
-            );
-        }
+        // For first call (lastRequestTimestamp == 0), require block.timestamp >= intervalSecs
+        // For subsequent calls, require block.timestamp >= lastRequestTimestamp + intervalSecs
+        uint256 intervalSecs = lotteryIntervalHours * 3600;
+        uint256 requiredTime = lastRequestTimestamp == 0 
+            ? intervalSecs 
+            : lastRequestTimestamp + intervalSecs;
+        require(
+            block.timestamp >= requiredTime,
+            "Too soon to resolve lottery"
+        );
 
         // Update state BEFORE external call (Checks-Effects-Interactions pattern)
         lastRequestTimestamp = block.timestamp;
