@@ -13,6 +13,18 @@ OWNER_ADDRESS=$(cast wallet address $PRIVATE_KEY)
 ABI_DIR="deployments/abis"
 DEPLOYMENT_DIR="deployments"
 
+# Get chain ID (use CHAIN_ID env var if set, otherwise query from RPC)
+if [ -z "$CHAIN_ID" ]; then
+  CHAIN_ID=$(cast chain-id --rpc-url $RPC_URL 2>/dev/null || echo "421614")
+  if [ -z "$CHAIN_ID" ]; then
+    echo "⚠️  Could not determine chain ID, defaulting to 421614 (Arbitrum Sepolia)"
+    CHAIN_ID="421614"
+  fi
+fi
+
+# Path to update script
+UPDATE_SCRIPT="scripts/update_deployed_contracts.js"
+
 # Token parameters
 TOKEN_NAME="LotteryToken"
 TOKEN_SYMBOL="LUK"
@@ -49,6 +61,12 @@ MOCK_VRF_OUTPUT=$(forge create --rpc-url $RPC_URL --private-key $PRIVATE_KEY \
   --constructor-args $VRF_REQUEST_PRICE)
 
 MOCK_VRF=$(echo "$MOCK_VRF_OUTPUT" | grep "Deployed to:" | awk '{print $3}')
+# Extract transaction hash from forge output (look for various patterns)
+MOCK_VRF_TX=$(echo "$MOCK_VRF_OUTPUT" | grep -iE "(Transaction hash|tx hash|txHash|transactionHash|Deployment transaction):" | grep -oE "0x[a-fA-F0-9]{64}" | head -1)
+# If not found, try to extract from broadcast logs or any hex string that looks like a tx hash
+if [ -z "$MOCK_VRF_TX" ]; then
+  MOCK_VRF_TX=$(echo "$MOCK_VRF_OUTPUT" | grep -oE "0x[a-fA-F0-9]{64}" | grep -v "$MOCK_VRF" | head -1)
+fi
 
 if [ -z "$MOCK_VRF" ]; then
   echo "❌ Failed to deploy MockVRFV2PlusWrapper"
@@ -56,7 +74,13 @@ if [ -z "$MOCK_VRF" ]; then
   exit 1
 fi
 
+if [ -z "$MOCK_VRF_TX" ]; then
+  echo "⚠️  Could not extract transaction hash for MockVRFV2PlusWrapper, using empty string"
+  MOCK_VRF_TX=""
+fi
+
 echo "✅ MockVRFV2PlusWrapper deployed at: $MOCK_VRF"
+echo "   Transaction hash: $MOCK_VRF_TX"
 
 # Export Mock VRF ABI (extract from compiled JSON)
 if [ -f "out/MockVRFV2PlusWrapper.sol/MockVRFV2PlusWrapper.json" ]; then
@@ -66,6 +90,13 @@ if [ -f "out/MockVRFV2PlusWrapper.sol/MockVRFV2PlusWrapper.json" ]; then
   echo "⚠️  Could not extract ABI automatically. Please extract manually from out/MockVRFV2PlusWrapper.sol/MockVRFV2PlusWrapper.json"
 fi
 echo "✅ Exported MockVRFV2PlusWrapper ABI"
+
+# Update deployedContracts.ts
+if [ -f "$ABI_DIR/MockVRFV2PlusWrapper.json" ]; then
+  echo "📝 Updating deployedContracts.ts for MockVRFV2PlusWrapper..."
+  node $UPDATE_SCRIPT "$CHAIN_ID" "mock-vrf-v2-plus-wrapper-solidity" "$MOCK_VRF" "$MOCK_VRF_TX" "$ABI_DIR/MockVRFV2PlusWrapper.json" || \
+  echo "⚠️  Failed to update deployedContracts.ts for MockVRFV2PlusWrapper"
+fi
 echo ""
 
 # Deploy ERC20Example
@@ -76,6 +107,12 @@ ERC20_OUTPUT=$(forge create --rpc-url $RPC_URL --private-key $PRIVATE_KEY \
   --constructor-args "$TOKEN_NAME" "$TOKEN_SYMBOL" $TOKEN_CAP $OWNER_ADDRESS)
 
 ERC20=$(echo "$ERC20_OUTPUT" | grep "Deployed to:" | awk '{print $3}')
+# Extract transaction hash from forge output
+ERC20_TX=$(echo "$ERC20_OUTPUT" | grep -iE "(Transaction hash|tx hash|txHash|transactionHash|Deployment transaction):" | grep -oE "0x[a-fA-F0-9]{64}" | head -1)
+# If not found, try to extract from broadcast logs or any hex string that looks like a tx hash
+if [ -z "$ERC20_TX" ]; then
+  ERC20_TX=$(echo "$ERC20_OUTPUT" | grep -oE "0x[a-fA-F0-9]{64}" | grep -v "$ERC20" | head -1)
+fi
 
 if [ -z "$ERC20" ]; then
   echo "❌ Failed to deploy ERC20Example"
@@ -83,7 +120,13 @@ if [ -z "$ERC20" ]; then
   exit 1
 fi
 
+if [ -z "$ERC20_TX" ]; then
+  echo "⚠️  Could not extract transaction hash for ERC20Example, using empty string"
+  ERC20_TX=""
+fi
+
 echo "✅ ERC20Example deployed at: $ERC20"
+echo "   Transaction hash: $ERC20_TX"
 
 # Export ERC20 ABI (extract from compiled JSON)
 if [ -f "out/ERC20Example.sol/ERC20Example.json" ]; then
@@ -93,6 +136,13 @@ if [ -f "out/ERC20Example.sol/ERC20Example.json" ]; then
   echo "⚠️  Could not extract ABI automatically. Please extract manually from out/ERC20Example.sol/ERC20Example.json"
 fi
 echo "✅ Exported ERC20Example ABI"
+
+# Update deployedContracts.ts
+if [ -f "$ABI_DIR/ERC20Example.json" ]; then
+  echo "📝 Updating deployedContracts.ts for ERC20Example..."
+  node $UPDATE_SCRIPT "$CHAIN_ID" "erc20-example-solidity" "$ERC20" "$ERC20_TX" "$ABI_DIR/ERC20Example.json" || \
+  echo "⚠️  Failed to update deployedContracts.ts for ERC20Example"
+fi
 echo ""
 
 # Deploy VrfConsumer
@@ -103,6 +153,12 @@ VRF_OUTPUT=$(forge create --rpc-url $RPC_URL --private-key $PRIVATE_KEY \
   --constructor-args $MOCK_VRF $OWNER_ADDRESS)
 
 VRF=$(echo "$VRF_OUTPUT" | grep "Deployed to:" | awk '{print $3}')
+# Extract transaction hash from forge output
+VRF_TX=$(echo "$VRF_OUTPUT" | grep -iE "(Transaction hash|tx hash|txHash|transactionHash|Deployment transaction):" | grep -oE "0x[a-fA-F0-9]{64}" | head -1)
+# If not found, try to extract from broadcast logs or any hex string that looks like a tx hash
+if [ -z "$VRF_TX" ]; then
+  VRF_TX=$(echo "$VRF_OUTPUT" | grep -oE "0x[a-fA-F0-9]{64}" | grep -v "$VRF" | head -1)
+fi
 
 if [ -z "$VRF" ]; then
   echo "❌ Failed to deploy VrfConsumer"
@@ -110,7 +166,13 @@ if [ -z "$VRF" ]; then
   exit 1
 fi
 
+if [ -z "$VRF_TX" ]; then
+  echo "⚠️  Could not extract transaction hash for VrfConsumer, using empty string"
+  VRF_TX=""
+fi
+
 echo "✅ VrfConsumer deployed at: $VRF"
+echo "   Transaction hash: $VRF_TX"
 
 # Export VrfConsumer ABI (extract from compiled JSON)
 if [ -f "out/VrfConsumer.sol/VrfConsumer.json" ]; then
@@ -120,6 +182,13 @@ if [ -f "out/VrfConsumer.sol/VrfConsumer.json" ]; then
   echo "⚠️  Could not extract ABI automatically. Please extract manually from out/VrfConsumer.sol/VrfConsumer.json"
 fi
 echo "✅ Exported VrfConsumer ABI"
+
+# Update deployedContracts.ts
+if [ -f "$ABI_DIR/VrfConsumer.json" ]; then
+  echo "📝 Updating deployedContracts.ts for VrfConsumer..."
+  node $UPDATE_SCRIPT "$CHAIN_ID" "vrf-consumer-solidity" "$VRF" "$VRF_TX" "$ABI_DIR/VrfConsumer.json" || \
+  echo "⚠️  Failed to update deployedContracts.ts for VrfConsumer"
+fi
 echo ""
 
 # Configure contracts
