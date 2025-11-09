@@ -3,6 +3,26 @@ pragma solidity ^0.8.20;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
 
+// VRF V2+ Wrapper interface
+interface IVRFV2PlusWrapper {
+    function calculateRequestPriceNative(
+        uint32 _callbackGasLimit,
+        uint32 _numWords
+    ) external view returns (uint256);
+
+    function requestRandomWordsInNative(
+        uint32 _callbackGasLimit,
+        uint16 _requestConfirmations,
+        uint32 _numWords,
+        bytes calldata extraArgs
+    ) external payable returns (uint256 requestId);
+}
+
+// ERC20 interface - minimal interface with only functions we use
+interface IERC20 {
+    function mint(address account, uint256 value) external;
+}
+
 /**
  * @title VrfConsumer
  * @dev A VRF consumer contract that requests randomness from Chainlink VRF V2+ wrapper
@@ -11,25 +31,6 @@ import "@openzeppelin/contracts/access/Ownable.sol";
  * This contract matches the functionality of the Stylus Rust vrf-consumer contract
  */
 contract VrfConsumer is Ownable {
-    // VRF V2+ Wrapper interface
-    interface IVRFV2PlusWrapper {
-        function calculateRequestPriceNative(
-            uint32 _callbackGasLimit,
-            uint32 _numWords
-        ) external view returns (uint256);
-
-        function requestRandomWordsInNative(
-            uint32 _callbackGasLimit,
-            uint16 _requestConfirmations,
-            uint32 _numWords,
-            bytes calldata extraArgs
-        ) external payable returns (uint256 requestId);
-    }
-
-    // ERC20 interface - minimal interface with only functions we use
-    interface IERC20 {
-        function mint(address account, uint256 value) external;
-    }
 
     // VRF variables
     address public i_vrf_v2_plus_wrapper;
@@ -131,11 +132,18 @@ contract VrfConsumer is Ownable {
             "Too soon to resolve lottery"
         );
 
+        // casting to 'uint32' is safe because callback_gas_limit is initialized to 100000 and will not exceed uint32 max
+        // forge-lint: disable-next-line(unsafe-typecast)
         uint32 callbackGasLimit = uint32(callback_gas_limit);
+        // casting to 'uint16' is safe because request_confirmations is initialized to 3 and will not exceed uint16 max
+        // forge-lint: disable-next-line(unsafe-typecast)
         uint16 requestConfirmations = uint16(request_confirmations);
+        // casting to 'uint32' is safe because num_words is initialized to 1 and will not exceed uint32 max
+        // forge-lint: disable-next-line(unsafe-typecast)
         uint32 numWordsValue = uint32(num_words);
 
-        (requestId, uint256 reqPrice) = requestRandomnessPayInNative(
+        uint256 reqPrice;
+        (requestId, reqPrice) = requestRandomnessPayInNative(
             callbackGasLimit,
             requestConfirmations,
             numWordsValue
