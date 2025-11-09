@@ -121,6 +121,10 @@ while [[ $# -gt 0 ]]; do
       esac
       shift 2
       ;;
+    --)
+      # End of options marker (used by yarn/npm to separate arguments)
+      shift
+      ;;
     --help|-h)
       echo "Usage: $0 [OPTIONS]"
       echo ""
@@ -183,6 +187,7 @@ echo "Deploying Solidity Contracts"
 echo "=========================================="
 echo "RPC URL: $RPC_URL"
 echo "Owner: $OWNER_ADDRESS"
+echo "Private Key: ${PRIVATE_KEY:0:4}..." # Show first 4 chars for identification
 echo ""
 
 # Navigate to solidity directory
