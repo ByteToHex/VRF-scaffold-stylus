@@ -274,8 +274,40 @@ echo "Files:"
 echo "  Deployment info: $DEPLOYMENT_INFO"
 echo "  ABIs:           $ABI_DIR/"
 echo ""
+
+# Run verification script if not on local network
+if [[ "$RPC_URL" != *"127.0.0.1:8547"* ]] && [[ "$RPC_URL" != *"localhost"* ]]; then
+  echo "=========================================="
+  echo "Verifying Contracts"
+  echo "=========================================="
+  echo ""
+  
+  # Export variables for verification script
+  export MOCK_VRF_ADDRESS=$MOCK_VRF
+  export ERC20_ADDRESS=$ERC20
+  export VRF_ADDRESS=$VRF
+  export OWNER_ADDRESS=$OWNER_ADDRESS
+  export VRF_REQUEST_PRICE=$VRF_REQUEST_PRICE
+  export TOKEN_NAME=$TOKEN_NAME
+  export TOKEN_SYMBOL=$TOKEN_SYMBOL
+  export TOKEN_CAP=$TOKEN_CAP
+  export CHAIN_ID=$CHAIN_ID
+  export RPC_URL=$RPC_URL
+  
+  # Call verification script
+  if [ -f "scripts/verify.sh" ]; then
+    bash scripts/verify.sh || echo "⚠️  Verification failed or skipped. You can verify manually later using scripts/verify.sh"
+  else
+    echo "⚠️  Verification script not found at scripts/verify.sh"
+  fi
+  echo ""
+fi
+
 echo "Next steps:"
 echo "  1. Use the addresses above to interact with contracts"
 echo "  2. See scripts/test.sh for testing examples"
 echo "  3. ABIs are available in $ABI_DIR/"
+if [[ "$RPC_URL" != *"127.0.0.1:8547"* ]] && [[ "$RPC_URL" != *"localhost"* ]]; then
+  echo "  4. Verify contracts on block explorer: scripts/verify.sh"
+fi
 echo ""
