@@ -81,7 +81,7 @@ contract VrfConsumerE2ETest is Test {
     /**
      * @dev Test contract deployment and initial state
      */
-    function test_ContractDeployment_InitialState() public {
+    function test_ContractDeployment_InitialState() public view {
         // Verify ERC20 token initial state
         assertEq(token.name(), TOKEN_NAME, "Token name should match");
         assertEq(token.symbol(), TOKEN_SYMBOL, "Token symbol should match");
@@ -106,7 +106,7 @@ contract VrfConsumerE2ETest is Test {
     /**
      * @dev Test setting up contract integration
      */
-    function test_ContractIntegrationSetup() public {
+    function test_ContractIntegrationSetup() public view {
         // Verify integration setup from setUp
         assertEq(token.getAuthorizedMinter(), address(vrfConsumer), "VrfConsumer should be authorized minter");
         assertEq(vrfConsumer.erc20_token_address(), address(token), "Token address should be set on VrfConsumer");
@@ -191,7 +191,7 @@ contract VrfConsumerE2ETest is Test {
         
         // Fast forward and fulfill to set accepting_participants to false temporarily
         vm.warp(block.timestamp + vrfConsumer.lotteryIntervalHours() * 3600 + 1);
-        uint256 requestId = vrfConsumer.requestRandomWords();
+        vrfConsumer.requestRandomWords();
         
         // During fulfillment, accepting_participants is set to false
         // But it's set back to true at the end, so we can't easily test the false state
@@ -270,7 +270,7 @@ contract VrfConsumerE2ETest is Test {
     /**
      * @dev Test request price calculation
      */
-    function test_VRFRequest_PriceCalculation() public {
+    function test_VRFRequest_PriceCalculation() public view {
         uint256 expectedPrice = mockVrfWrapper.calculateRequestPriceNative(
             uint32(vrfConsumer.callback_gas_limit()),
             uint32(vrfConsumer.num_words())

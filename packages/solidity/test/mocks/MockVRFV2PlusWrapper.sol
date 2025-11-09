@@ -56,7 +56,7 @@ contract MockVRFV2PlusWrapper is IVRFV2PlusWrapper {
      * @return The price in wei
      */
     function calculateRequestPriceNative(
-        uint32 _callbackGasLimit,
+        uint32 /* _callbackGasLimit */,
         uint32 _numWords
     ) public view override returns (uint256) {
         // Simple pricing: base price * numWords
@@ -75,7 +75,7 @@ contract MockVRFV2PlusWrapper is IVRFV2PlusWrapper {
         uint32 _callbackGasLimit,
         uint16 _requestConfirmations,
         uint32 _numWords,
-        bytes calldata extraArgs
+        bytes calldata /* extraArgs */
     ) external payable override returns (uint256 requestId) {
         require(msg.value >= calculateRequestPriceNative(_callbackGasLimit, _numWords), "Insufficient payment");
         
