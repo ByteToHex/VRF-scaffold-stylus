@@ -42,6 +42,7 @@ contract VrfConsumer is Ownable, ReentrancyGuard {
     mapping(uint256 => uint256) public sRequestsValue; // store random word returned
     mapping(uint256 => bool) public sRequestsFulfilled; // store if request was fulfilled
     uint256[] public requestIds;
+    uint256 public lastRequestId;
 
     uint32 public callbackGasLimit;
     uint16 public requestConfirmations;
@@ -155,8 +156,9 @@ contract VrfConsumer is Ownable, ReentrancyGuard {
         sRequestsFulfilled[requestId] = false;
         sRequestsPaid[requestId] = reqPrice;
 
-        // Add to request IDs array
+        // Add to request IDs array and update last request ID
         requestIds.push(requestId);
+        lastRequestId = requestId;
 
         emit RequestSent(requestId, numWords, reqPrice);
 
@@ -281,11 +283,7 @@ contract VrfConsumer is Ownable, ReentrancyGuard {
      * @return The last request ID (0 if no requests have been made)
      */
     function getLastRequestId() external view returns (uint256) {
-        uint256 length = requestIds.length;
-        if (length == 0) {
-            return 0;
-        }
-        return requestIds[length - 1];
+        return lastRequestId;
     }
 
     /**
@@ -298,6 +296,18 @@ contract VrfConsumer is Ownable, ReentrancyGuard {
             callbackGasLimit,
             numWords
         );
+    }
+
+    /**
+     * @dev Withdraw native tokens (only owner)
+     * @param amount The amount to withdraw in wei
+     */
+    function withdrawNative(uint256 amount) external onlyOwner {
+        require(amount > 0, "Amount must be greater than zero");
+        require(address(this).balance >= amount, "Insufficient balance");
+        
+        (bool success, ) = owner().call{value: amount}("");
+        require(success, "Transfer failed");
     }
 
     /**
