@@ -1,0 +1,6 @@
+[submodule "packages/solidity/lib/openzeppelin-contracts"]
+	path = packages/solidity/lib/openzeppelin-contracts
+	url = https://github.com/OpenZeppelin/openzeppelin-contracts
+[submodule "packages/solidity/lib/chainlink"]
+	path = packages/solidity/lib/chainlink
+	url = https://github.com/smartcontractkit/chainlink
