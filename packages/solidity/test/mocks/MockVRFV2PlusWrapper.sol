@@ -51,7 +51,6 @@ contract MockVRFV2PlusWrapper is IVRFV2PlusWrapper {
     
     /**
      * @dev Calculate the request price in native tokens
-     * @param _callbackGasLimit Gas limit for the callback
      * @param _numWords Number of random words requested
      * @return The price in wei
      */
@@ -68,7 +67,6 @@ contract MockVRFV2PlusWrapper is IVRFV2PlusWrapper {
      * @param _callbackGasLimit Gas limit for the callback
      * @param _requestConfirmations Number of confirmations to wait
      * @param _numWords Number of random words to request
-     * @param extraArgs Extra arguments (not used in mock)
      * @return requestId The request ID
      */
     function requestRandomWordsInNative(
