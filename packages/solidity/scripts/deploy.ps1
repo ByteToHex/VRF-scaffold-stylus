@@ -45,6 +45,7 @@ New-Item -ItemType Directory -Force -Path $DEPLOYMENT_DIR | Out-Null
 # Deploy Mock VRF Wrapper
 Write-Host "🚀 Deploying MockVRFV2PlusWrapper..." -ForegroundColor Yellow
 $mockVrfOutput = forge create --rpc-url $RPC_URL --private-key $PRIVATE_KEY `
+  --broadcast `
   test/mocks/MockVRFV2PlusWrapper.sol:MockVRFV2PlusWrapper `
   --constructor-args $VRF_REQUEST_PRICE
 
@@ -66,6 +67,7 @@ Write-Host ""
 # Deploy ERC20Example
 Write-Host "🚀 Deploying ERC20Example..." -ForegroundColor Yellow
 $erc20Output = forge create --rpc-url $RPC_URL --private-key $PRIVATE_KEY `
+  --broadcast `
   contracts/ERC20Example.sol:ERC20Example `
   --constructor-args $TOKEN_NAME $TOKEN_SYMBOL $TOKEN_CAP $OWNER_ADDRESS
 
@@ -87,6 +89,7 @@ Write-Host ""
 # Deploy VrfConsumer
 Write-Host "🚀 Deploying VrfConsumer..." -ForegroundColor Yellow
 $vrfOutput = forge create --rpc-url $RPC_URL --private-key $PRIVATE_KEY `
+  --broadcast `
   contracts/VrfConsumer.sol:VrfConsumer `
   --constructor-args $MOCK_VRF $OWNER_ADDRESS
 

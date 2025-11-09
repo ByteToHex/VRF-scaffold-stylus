@@ -44,6 +44,7 @@ mkdir -p $DEPLOYMENT_DIR
 # Deploy Mock VRF Wrapper
 echo "🚀 Deploying MockVRFV2PlusWrapper..."
 MOCK_VRF_OUTPUT=$(forge create --rpc-url $RPC_URL --private-key $PRIVATE_KEY \
+  --broadcast \
   test/mocks/MockVRFV2PlusWrapper.sol:MockVRFV2PlusWrapper \
   --constructor-args $VRF_REQUEST_PRICE)
 
@@ -65,6 +66,7 @@ echo ""
 # Deploy ERC20Example
 echo "🚀 Deploying ERC20Example..."
 ERC20_OUTPUT=$(forge create --rpc-url $RPC_URL --private-key $PRIVATE_KEY \
+  --broadcast \
   contracts/ERC20Example.sol:ERC20Example \
   --constructor-args "$TOKEN_NAME" "$TOKEN_SYMBOL" $TOKEN_CAP $OWNER_ADDRESS)
 
@@ -86,6 +88,7 @@ echo ""
 # Deploy VrfConsumer
 echo "🚀 Deploying VrfConsumer..."
 VRF_OUTPUT=$(forge create --rpc-url $RPC_URL --private-key $PRIVATE_KEY \
+  --broadcast \
   contracts/VrfConsumer.sol:VrfConsumer \
   --constructor-args $MOCK_VRF $OWNER_ADDRESS)
 
