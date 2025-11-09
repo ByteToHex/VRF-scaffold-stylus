@@ -10,7 +10,8 @@ import { config as dotenvConfig } from "dotenv";
 import * as path from "path";
 import * as fs from "fs";
 
-const envPath = path.resolve(__dirname, "../.env");
+// Load environment variables from .env file in stylus package (shared)
+const envPath = path.resolve(__dirname, "../../stylus/.env");
 if (fs.existsSync(envPath)) {
   dotenvConfig({ path: envPath });
 }

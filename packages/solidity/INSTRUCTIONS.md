@@ -41,7 +41,9 @@ yarn install
 
 ### Environment Variables
 
-Create a `.env` file in `packages/solidity/` (or use the one in `packages/stylus/`) with the following variables:
+The Solidity package **automatically uses the `.env` file from `packages/stylus/`**. You don't need to create a separate `.env` file for the solidity package.
+
+If you don't have a `.env` file yet, create one in `packages/stylus/` with the following variables:
 
 #### For Local Development (Devnet)
 ```env
@@ -65,7 +67,7 @@ ACCOUNT_ADDRESS_MAINNET=your_account_address_here
 RPC_URL_MAINNET=https://arb1.arbitrum.io/rpc
 ```
 
-**Note:** The deployment scripts use the same environment variables as the Stylus package, so you can share the `.env` file between them.
+**Note:** The Solidity deployment scripts automatically load the `.env` file from `packages/stylus/` (configured in `packages/solidity/scripts/utils/deployment.ts`, `packages/solidity/scripts/utils/network.ts`, and `packages/solidity/scripts/deploy.ts`). This ensures both Stylus and Solidity packages use the same environment configuration.
 
 ## Available Scripts
 
