@@ -58,7 +58,7 @@ contract MockVRFV2PlusWrapper is IVRFV2PlusWrapper {
     function calculateRequestPriceNative(
         uint32 _callbackGasLimit,
         uint32 _numWords
-    ) external view override returns (uint256) {
+    ) public view override returns (uint256) {
         // Simple pricing: base price * numWords
         return requestPrice * _numWords;
     }
@@ -116,7 +116,7 @@ contract MockVRFV2PlusWrapper is IVRFV2PlusWrapper {
         request.fulfilled = true;
         
         // Call the consumer's rawFulfillRandomWords function
-        VrfConsumer consumer = VrfConsumer(request.consumer);
+        VrfConsumer consumer = VrfConsumer(payable(request.consumer));
         consumer.rawFulfillRandomWords(requestId, randomWords);
         
         emit RandomWordsFulfilled(requestId, randomWords);
