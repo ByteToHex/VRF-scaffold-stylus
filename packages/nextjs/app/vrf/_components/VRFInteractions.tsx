@@ -13,7 +13,7 @@ const VRFInteractions = () => {
   const [isFunding, setIsFunding] = useState<boolean>(false);
 
   const { data: vrfContract } = useScaffoldContract({
-    contractName: "vrf-consumer",
+    contractName: "vrf-consumer-solidity",
   });
 
   const { data: balanceData, refetch: refetchBalance } = useBalance({
@@ -22,24 +22,32 @@ const VRFInteractions = () => {
   });
 
   const { writeContractAsync: requestRandomWords, isMining: isRequestingRandom } = useScaffoldWriteContract({
-    contractName: "vrf-consumer",
+    contractName: "vrf-consumer-solidity",
   });
 
-  const { data: lastFulfilledId, refetch: refetchLastFulfilledId } = useScaffoldReadContract({
-    contractName: "vrf-consumer",
-    functionName: "getLastFulfilledId",
-  });
-
-  const { data: lastFulfilledValue, refetch: refetchLastFulfilledValue } = useScaffoldReadContract({
-    contractName: "vrf-consumer",
-    functionName: "getLastFulfilledValue",
+  const { data: lastRequestId, refetch: refetchLastRequestId } = useScaffoldReadContract({
+    contractName: "vrf-consumer-solidity",
+    functionName: "getLastRequestId",
     watch: true,
   });
 
+  const { data: requestStatus, refetch: refetchRequestStatus } = useScaffoldReadContract({
+    contractName: "vrf-consumer-solidity",
+    functionName: "getRequestStatus",
+    ...(lastRequestId && lastRequestId > 0n ? { args: [lastRequestId] as const } : {}),
+    query: { enabled: !!lastRequestId && lastRequestId > 0n },
+    watch: true,
+  } as any);
+
+  // Extract fulfilled status and random word from requestStatus tuple
+  // requestStatus is a tuple: [paid: bigint, fulfilled: boolean, randomWord: bigint]
+  const isFulfilled = requestStatus?.[1] ?? false;
+  const lastFulfilledValue = isFulfilled ? (requestStatus?.[2] ?? null) : null;
+  const lastFulfilledId = isFulfilled ? lastRequestId : null;
+
   const { data: requiredPriceData } = useScaffoldReadContract({
-    contractName: "vrf-consumer",
-    // getRequestPrice was recently added to the contract; cast to bypass outdated ABI typing
-    functionName: "getRequestPrice" as any,
+    contractName: "vrf-consumer-solidity",
+    functionName: "getRequestPrice",
     watch: true,
   });
   const requiredPrice = requiredPriceData as unknown as bigint | null;
@@ -63,7 +71,7 @@ const VRFInteractions = () => {
   const handleRequest = async () => {
     try {
       await requestRandomWords({ functionName: "requestRandomWords" });
-      await Promise.all([refetchLastFulfilledId(), refetchLastFulfilledValue(), refetchBalance()]);
+      await Promise.all([refetchLastRequestId(), refetchRequestStatus(), refetchBalance()]);
     } catch {
       // errors surfaced by wagmi notifications
     }
@@ -174,7 +182,11 @@ const VRFInteractions = () => {
                   {lastFulfilledId ? lastFulfilledId.toString() : "—"}
                 </code>
                 <div className="flex items-center gap-1">
-                  <button className="btn btn-xs btn-ghost" onClick={() => refetchLastFulfilledId()} title="Refresh">
+                  <button
+                    className="btn btn-xs btn-ghost"
+                    onClick={() => Promise.all([refetchLastRequestId(), refetchRequestStatus()])}
+                    title="Refresh"
+                  >
                     🔄
                   </button>
                 </div>
