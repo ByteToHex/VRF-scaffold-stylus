@@ -37,6 +37,7 @@ contract VrfConsumer is Ownable, ReentrancyGuard {
     address public iVrfV2PlusWrapper;
     uint256 public lastFulfilledId;
     uint256 public lastFulfilledValue;
+    address public lastWinner;
 
     uint256 public callbackGasLimit;
     uint256 public requestConfirmations;
@@ -217,6 +218,7 @@ contract VrfConsumer is Ownable, ReentrancyGuard {
         acceptingParticipants = false;
 
         address winnerAddress = decideWinner(randomWords);
+        lastWinner = winnerAddress;
 
         emit RequestFulfilled(requestId, randomWords, winnerAddress);
 
@@ -253,6 +255,14 @@ contract VrfConsumer is Ownable, ReentrancyGuard {
      */
     function getLastFulfilledValue() external view returns (uint256) {
         return lastFulfilledValue;
+    }
+
+    /**
+     * @dev Get the last winner address
+     * @return The last winner address
+     */
+    function getLastWinner() external view returns (address) {
+        return lastWinner;
     }
 
     /**
