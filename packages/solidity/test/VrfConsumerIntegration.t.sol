@@ -216,7 +216,7 @@ contract VrfConsumerIntegrationTest is Test {
      */
     function test_TokenAddressConfiguration() public {
         // Initially token address should be set
-        assertEq(vrfConsumer.erc20_token_address(), address(token), "Token address should be set");
+        assertEq(vrfConsumer.erc20TokenAddress(), address(token), "Token address should be set");
         
         // Owner can change token address
         ERC20Example newToken = new ERC20Example(
@@ -229,7 +229,7 @@ contract VrfConsumerIntegrationTest is Test {
         newToken.setAuthorizedMinter(address(vrfConsumer));
         vrfConsumer.setErc20Token(address(newToken));
         
-        assertEq(vrfConsumer.erc20_token_address(), address(newToken), "Token address should be updated");
+        assertEq(vrfConsumer.erc20TokenAddress(), address(newToken), "Token address should be updated");
         
         // Non-owner cannot change token address
         vm.prank(user1);

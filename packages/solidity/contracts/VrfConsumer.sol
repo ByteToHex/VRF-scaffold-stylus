@@ -33,23 +33,23 @@ interface IERC20 {
 contract VrfConsumer is Ownable {
 
     // VRF variables
-    address public i_vrf_v2_plus_wrapper;
-    uint256 public last_fulfilled_id;
-    uint256 public last_fulfilled_value;
+    address public iVrfV2PlusWrapper;
+    uint256 public lastFulfilledId;
+    uint256 public lastFulfilledValue;
 
-    uint256 public callback_gas_limit;
-    uint256 public request_confirmations;
-    uint256 public num_words;
+    uint256 public callbackGasLimit;
+    uint256 public requestConfirmations;
+    uint256 public numWords;
 
     // Event variables
-    bool public accepting_participants;
-    uint256 public lottery_interval_hours;
-    uint256 public last_request_timestamp;
+    bool public acceptingParticipants;
+    uint256 public lotteryIntervalHours;
+    uint256 public lastRequestTimestamp;
 
     // Token distribution variables
-    address public erc20_token_address;
+    address public erc20TokenAddress;
     address[] public participants;
-    uint256 public lottery_entry_fee;
+    uint256 public lotteryEntryFee;
 
     // Events
     event RequestSent(uint256 indexed requestId, uint32 numWords, uint256 payment);
@@ -65,45 +65,45 @@ contract VrfConsumer is Ownable {
 
     /**
      * @dev Constructor - initializes the contract with VRF wrapper address and owner
-     * @param vrf_v2_plus_wrapper Address of the VRF V2+ wrapper contract
+     * @param vrfV2PlusWrapper Address of the VRF V2+ wrapper contract
      * @param owner Initial owner address
      */
-    constructor(address vrf_v2_plus_wrapper, address owner) Ownable(owner) {
-        i_vrf_v2_plus_wrapper = vrf_v2_plus_wrapper;
-        erc20_token_address = address(0);
+    constructor(address vrfV2PlusWrapper, address owner) Ownable(owner) {
+        iVrfV2PlusWrapper = vrfV2PlusWrapper;
+        erc20TokenAddress = address(0);
 
-        lottery_entry_fee = 500000; // 0.0005 ETH in wei
-        lottery_interval_hours = 4;
-        accepting_participants = true;
+        lotteryEntryFee = 500000; // 0.0005 ETH in wei
+        lotteryIntervalHours = 4;
+        acceptingParticipants = true;
 
-        callback_gas_limit = 100000;
-        request_confirmations = 3;
-        num_words = 1;
+        callbackGasLimit = 100000;
+        requestConfirmations = 3;
+        numWords = 1;
     }
 
     /**
      * @dev Internal function to request randomness paying in native ETH
-     * @param callbackGasLimit Gas limit for the callback
-     * @param requestConfirmations Number of confirmations to wait
-     * @param numWords Number of random words to request
+     * @param _callbackGasLimit Gas limit for the callback
+     * @param _requestConfirmations Number of confirmations to wait
+     * @param _numWords Number of random words to request
      * @return requestId The VRF request ID
      * @return reqPrice The price paid for the request
      */
     function requestRandomnessPayInNative(
-        uint32 callbackGasLimit,
-        uint16 requestConfirmations,
-        uint32 numWords
+        uint32 _callbackGasLimit,
+        uint16 _requestConfirmations,
+        uint32 _numWords
     ) internal returns (uint256 requestId, uint256 reqPrice) {
-        IVRFV2PlusWrapper vrfWrapper = IVRFV2PlusWrapper(i_vrf_v2_plus_wrapper);
+        IVRFV2PlusWrapper vrfWrapper = IVRFV2PlusWrapper(iVrfV2PlusWrapper);
         require(
-            i_vrf_v2_plus_wrapper.code.length > 0,
+            iVrfV2PlusWrapper.code.length > 0,
             "VRF wrapper contract does not exist at given address"
         );
 
         // Calculate request price
         reqPrice = vrfWrapper.calculateRequestPriceNative(
-            callbackGasLimit,
-            numWords
+            _callbackGasLimit,
+            _numWords
         );
 
         // Prepare extra args for native payment
@@ -111,9 +111,9 @@ contract VrfConsumer is Ownable {
 
         // Request random words
         requestId = vrfWrapper.requestRandomWordsInNative{value: reqPrice}(
-            callbackGasLimit,
-            requestConfirmations,
-            numWords,
+            _callbackGasLimit,
+            _requestConfirmations,
+            _numWords,
             extraArgs
         );
 
@@ -126,30 +126,30 @@ contract VrfConsumer is Ownable {
      */
     function requestRandomWords() external returns (uint256 requestId) {
         // Check if enough time has passed since last request
-        uint256 intervalSecs = lottery_interval_hours * 3600;
+        uint256 intervalSecs = lotteryIntervalHours * 3600;
         require(
-            block.timestamp >= last_request_timestamp + intervalSecs,
+            block.timestamp >= lastRequestTimestamp + intervalSecs,
             "Too soon to resolve lottery"
         );
 
-        // casting to 'uint32' is safe because callback_gas_limit is initialized to 100000 and will not exceed uint32 max
+        // casting to 'uint32' is safe because callbackGasLimit is initialized to 100000 and will not exceed uint32 max
         // forge-lint: disable-next-line(unsafe-typecast)
-        uint32 callbackGasLimit = uint32(callback_gas_limit);
-        // casting to 'uint16' is safe because request_confirmations is initialized to 3 and will not exceed uint16 max
+        uint32 callbackGasLimitValue = uint32(callbackGasLimit);
+        // casting to 'uint16' is safe because requestConfirmations is initialized to 3 and will not exceed uint16 max
         // forge-lint: disable-next-line(unsafe-typecast)
-        uint16 requestConfirmations = uint16(request_confirmations);
-        // casting to 'uint32' is safe because num_words is initialized to 1 and will not exceed uint32 max
+        uint16 requestConfirmationsValue = uint16(requestConfirmations);
+        // casting to 'uint32' is safe because numWords is initialized to 1 and will not exceed uint32 max
         // forge-lint: disable-next-line(unsafe-typecast)
-        uint32 numWordsValue = uint32(num_words);
+        uint32 numWordsValue = uint32(numWords);
 
         uint256 reqPrice;
         (requestId, reqPrice) = requestRandomnessPayInNative(
-            callbackGasLimit,
-            requestConfirmations,
+            callbackGasLimitValue,
+            requestConfirmationsValue,
             numWordsValue
         );
 
-        last_request_timestamp = block.timestamp;
+        lastRequestTimestamp = block.timestamp;
 
         emit RequestSent(requestId, numWordsValue, reqPrice);
 
@@ -165,8 +165,8 @@ contract VrfConsumer is Ownable {
         address recipient,
         uint256 amount
     ) internal {
-        require(erc20_token_address != address(0), "Token not set");
-        IERC20 token = IERC20(erc20_token_address);
+        require(erc20TokenAddress != address(0), "Token not set");
+        IERC20 token = IERC20(erc20TokenAddress);
         token.mint(recipient, amount);
     }
 
@@ -188,7 +188,7 @@ contract VrfConsumer is Ownable {
         winner = participants[idx];
 
         if (winner != address(0)) {
-            uint256 reward = lottery_entry_fee * len;
+            uint256 reward = lotteryEntryFee * len;
             mintDistributionReward(winner, reward);
 
             // Clear participants array
@@ -212,15 +212,15 @@ contract VrfConsumer is Ownable {
             ? randomWords[0]
             : 0;
 
-        last_fulfilled_id = requestId;
-        last_fulfilled_value = fulfilledValue;
-        accepting_participants = false;
+        lastFulfilledId = requestId;
+        lastFulfilledValue = fulfilledValue;
+        acceptingParticipants = false;
 
         address winnerAddress = decideWinner(randomWords);
 
         emit RequestFulfilled(requestId, randomWords, winnerAddress);
 
-        accepting_participants = true; // Accept new participants again
+        acceptingParticipants = true; // Accept new participants again
     }
 
     /**
@@ -232,8 +232,8 @@ contract VrfConsumer is Ownable {
         uint256 requestId,
         uint256[] memory randomWords
     ) external {
-        if (msg.sender != i_vrf_v2_plus_wrapper) {
-            revert OnlyVRFWrapperCanFulfill(msg.sender, i_vrf_v2_plus_wrapper);
+        if (msg.sender != iVrfV2PlusWrapper) {
+            revert OnlyVRFWrapperCanFulfill(msg.sender, iVrfV2PlusWrapper);
         }
 
         fulfillRandomWords(requestId, randomWords);
@@ -244,7 +244,7 @@ contract VrfConsumer is Ownable {
      * @return The last fulfilled request ID
      */
     function getLastFulfilledId() external view returns (uint256) {
-        return last_fulfilled_id;
+        return lastFulfilledId;
     }
 
     /**
@@ -252,7 +252,7 @@ contract VrfConsumer is Ownable {
      * @return The last fulfilled random value
      */
     function getLastFulfilledValue() external view returns (uint256) {
-        return last_fulfilled_value;
+        return lastFulfilledValue;
     }
 
     /**
@@ -260,7 +260,7 @@ contract VrfConsumer is Ownable {
      * @param tokenAddress Address of the ERC20 token contract
      */
     function setErc20Token(address tokenAddress) external onlyOwner {
-        erc20_token_address = tokenAddress;
+        erc20TokenAddress = tokenAddress;
     }
 
     /**
@@ -268,7 +268,7 @@ contract VrfConsumer is Ownable {
      * Takes a flat amount from user's wallet and adds them to participants list
      */
     function participateInLottery() external payable {
-        require(accepting_participants, "Not accepting participants");
+        require(acceptingParticipants, "Not accepting participants");
 
         address msgSender = msg.sender;
 
@@ -280,35 +280,23 @@ contract VrfConsumer is Ownable {
             );
         }
 
-        require(lottery_entry_fee > 0, "Fee not set");
-        require(msg.value == lottery_entry_fee, "Wrong amount");
+        require(lotteryEntryFee > 0, "Fee not set");
+        require(msg.value == lotteryEntryFee, "Wrong amount");
 
         participants.push(msgSender);
     }
 
-    /**
-     * @dev Get the lottery entry fee
-     * @return The entry fee in wei
-     */
-    function lotteryEntryFee() external view returns (uint256) {
-        return lottery_entry_fee;
-    }
+    // lotteryEntryFee is public, so getter is automatically generated
 
     /**
      * @dev Set the lottery entry fee (only owner)
      * @param fee The entry fee in wei
      */
     function setLotteryEntryFee(uint256 fee) external onlyOwner {
-        lottery_entry_fee = fee;
+        lotteryEntryFee = fee;
     }
 
-    /**
-     * @dev Get the lottery interval in hours
-     * @return The interval in hours
-     */
-    function lotteryIntervalHours() external view returns (uint256) {
-        return lottery_interval_hours;
-    }
+    // lotteryIntervalHours is public, so getter is automatically generated
 
     /**
      * @dev Set the lottery interval in hours (only owner)
@@ -317,7 +305,7 @@ contract VrfConsumer is Ownable {
     function setLotteryIntervalHours(
         uint256 intervalHours
     ) external onlyOwner {
-        lottery_interval_hours = intervalHours;
+        lotteryIntervalHours = intervalHours;
     }
 
     /**
