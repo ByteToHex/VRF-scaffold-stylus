@@ -6,6 +6,183 @@ import {ERC20Example} from "../contracts/ERC20Example.sol";
 import {VrfConsumer} from "../contracts/VrfConsumer.sol";
 import {MockVRFV2PlusWrapper} from "./mocks/MockVRFV2PlusWrapper.sol";
 
+// ============ Malicious Contracts for Reentrancy Testing ============
+
+/**
+ * @dev Malicious ERC20 token that attempts to reenter VrfConsumer during mint
+ */
+contract MaliciousReentrantToken is ERC20Example {
+    VrfConsumer public target;
+    bool public attackAttempted;
+    uint256 public reentrancyAttempts;
+    
+    constructor(
+        string memory name,
+        string memory symbol,
+        uint256 cap,
+        address owner,
+        VrfConsumer _target
+    ) ERC20Example(name, symbol, cap, owner) {
+        target = _target;
+    }
+    
+    /**
+     * @dev Override _update to attempt reentrancy attack
+     */
+    function _update(
+        address from,
+        address to,
+        uint256 value
+    ) internal override {
+        // Attempt reentrancy attack when tokens are minted
+        if (to != address(0) && value > 0 && !attackAttempted) {
+            attackAttempted = true;
+            reentrancyAttempts++;
+            
+            // Try to reenter by calling participateInLottery
+            try target.participateInLottery{value: target.lotteryEntryFee()}() {
+                // If reentrancy succeeds, try again
+                reentrancyAttempts++;
+            } catch {
+                // Reentrancy was blocked - good!
+            }
+        }
+        
+        super._update(from, to, value);
+    }
+}
+
+/**
+ * @dev Malicious ERC20 token that attempts to reenter during mint via _afterTokenTransfer
+ */
+contract MaliciousReentrantTokenV2 is ERC20Example {
+    VrfConsumer public target;
+    bool public attackAttempted;
+    
+    constructor(
+        string memory name,
+        string memory symbol,
+        uint256 cap,
+        address owner,
+        VrfConsumer _target
+    ) ERC20Example(name, symbol, cap, owner) {
+        target = _target;
+    }
+    
+    /**
+     * @dev Override _update to attempt reentrancy after mint
+     */
+    function _update(
+        address from,
+        address to,
+        uint256 value
+    ) internal override {
+        super._update(from, to, value);
+        
+        // Attempt reentrancy after token transfer
+        if (from == address(0) && to != address(0) && value > 0 && !attackAttempted) {
+            attackAttempted = true;
+            
+            // Try to manipulate state by calling requestRandomWords
+            try target.requestRandomWords() {
+                // Reentrancy succeeded - this should be blocked
+            } catch {
+                // Reentrancy was blocked - good!
+            }
+        }
+    }
+}
+
+/**
+ * @dev Malicious contract that attempts to reenter participateInLottery via receive()
+ */
+contract MaliciousParticipant {
+    VrfConsumer public target;
+    uint256 public reentrancyAttempts;
+    bool public attackActive;
+    
+    constructor(VrfConsumer _target) {
+        target = _target;
+    }
+    
+    /**
+     * @dev Attempt reentrancy when receiving ETH
+     */
+    receive() external payable {
+        if (attackActive && reentrancyAttempts < 5) {
+            reentrancyAttempts++;
+            // Try to participate again
+            try target.participateInLottery{value: target.lotteryEntryFee()}() {
+                // Reentrancy succeeded
+            } catch {
+                // Reentrancy was blocked
+            }
+        }
+    }
+    
+    /**
+     * @dev Participate in lottery and trigger reentrancy
+     */
+    function attack() external payable {
+        attackActive = true;
+        target.participateInLottery{value: target.lotteryEntryFee()}();
+        attackActive = false;
+    }
+}
+
+/**
+ * @dev Malicious contract that tries to reenter ERC20Example.mint()
+ */
+contract MaliciousMinter {
+    ERC20Example public token;
+    
+    constructor(ERC20Example _token) {
+        token = _token;
+    }
+    
+    function attack(address to, uint256 amount) external {
+        // First mint call
+        token.mint(to, amount);
+        
+        // Try to reenter - should be blocked
+        token.mint(to, amount);
+    }
+}
+
+/**
+ * @dev Malicious token that attempts multiple reentrancy attacks
+ */
+contract MaliciousMultiReentrantToken is ERC20Example {
+    VrfConsumer public target;
+    uint256 public attemptCount;
+    
+    constructor(
+        string memory name,
+        string memory symbol,
+        uint256 cap,
+        address owner,
+        VrfConsumer _target
+    ) ERC20Example(name, symbol, cap, owner) {
+        target = _target;
+    }
+    
+    function _update(
+        address from,
+        address to,
+        uint256 value
+    ) internal override {
+        if (to != address(0) && value > 0 && attemptCount < 3) {
+            attemptCount++;
+            
+            // Try multiple reentrancy attempts
+            try target.participateInLottery{value: target.lotteryEntryFee()}() {} catch {}
+            try target.requestRandomWords() {} catch {}
+        }
+        
+        super._update(from, to, value);
+    }
+}
+
 /**
  * @title VrfConsumerReentrancyTest
  * @dev Tests to validate non-reentrancy protection in VrfConsumer and ERC20Example contracts
@@ -46,132 +223,6 @@ contract VrfConsumerReentrancyTest is Test {
         
         token.setAuthorizedMinter(address(vrfConsumer));
         vrfConsumer.setErc20Token(address(token));
-    }
-    
-    // ============ Malicious ERC20 Token for Reentrancy Testing ============
-    
-    /**
-     * @dev Malicious ERC20 token that attempts to reenter VrfConsumer during mint
-     */
-    contract MaliciousReentrantToken is ERC20Example {
-        VrfConsumer public target;
-        bool public attackAttempted;
-        uint256 public reentrancyAttempts;
-        
-        constructor(
-            string memory name,
-            string memory symbol,
-            uint256 cap,
-            address owner,
-            VrfConsumer _target
-        ) ERC20Example(name, symbol, cap, owner) {
-            target = _target;
-        }
-        
-        /**
-         * @dev Override _update to attempt reentrancy attack
-         */
-        function _update(
-            address from,
-            address to,
-            uint256 value
-        ) internal override {
-            // Attempt reentrancy attack when tokens are minted to attacker
-            if (to == address(target) && value > 0 && !attackAttempted) {
-                attackAttempted = true;
-                reentrancyAttempts++;
-                
-                // Try to reenter by calling participateInLottery
-                try target.participateInLottery{value: target.lotteryEntryFee()}() {
-                    // If reentrancy succeeds, try again
-                    reentrancyAttempts++;
-                } catch {
-                    // Reentrancy was blocked - good!
-                }
-            }
-            
-            super._update(from, to, value);
-        }
-    }
-    
-    /**
-     * @dev Malicious ERC20 token that attempts to reenter during mint via _afterTokenTransfer
-     */
-    contract MaliciousReentrantTokenV2 is ERC20Example {
-        VrfConsumer public target;
-        bool public attackAttempted;
-        
-        constructor(
-            string memory name,
-            string memory symbol,
-            uint256 cap,
-            address owner,
-            VrfConsumer _target
-        ) ERC20Example(name, symbol, cap, owner) {
-            target = _target;
-        }
-        
-        /**
-         * @dev Override _update to attempt reentrancy after mint
-         */
-        function _update(
-            address from,
-            address to,
-            uint256 value
-        ) internal override {
-            super._update(from, to, value);
-            
-            // Attempt reentrancy after token transfer
-            if (from == address(0) && to != address(0) && value > 0 && !attackAttempted) {
-                attackAttempted = true;
-                
-                // Try to manipulate state by calling requestRandomWords
-                try target.requestRandomWords() {
-                    // Reentrancy succeeded - this should be blocked
-                } catch {
-                    // Reentrancy was blocked - good!
-                }
-            }
-        }
-    }
-    
-    // ============ Malicious Contract for participateInLottery Reentrancy ============
-    
-    /**
-     * @dev Malicious contract that attempts to reenter participateInLottery via receive()
-     */
-    contract MaliciousParticipant {
-        VrfConsumer public target;
-        uint256 public reentrancyAttempts;
-        bool public attackActive;
-        
-        constructor(VrfConsumer _target) {
-            target = _target;
-        }
-        
-        /**
-         * @dev Attempt reentrancy when receiving ETH
-         */
-        receive() external payable {
-            if (attackActive && reentrancyAttempts < 5) {
-                reentrancyAttempts++;
-                // Try to participate again
-                try target.participateInLottery{value: target.lotteryEntryFee()}() {
-                    // Reentrancy succeeded
-                } catch {
-                    // Reentrancy was blocked
-                }
-            }
-        }
-        
-        /**
-         * @dev Participate in lottery and trigger reentrancy
-         */
-        function attack() external payable {
-            attackActive = true;
-            target.participateInLottery{value: target.lotteryEntryFee()}();
-            attackActive = false;
-        }
     }
     
     // ============ Tests for mintDistributionReward Reentrancy ============
@@ -433,25 +484,6 @@ contract VrfConsumerReentrancyTest is Test {
         assertEq(token.totalSupply(), mintAmount, "Total supply should reflect only one mint");
     }
     
-    /**
-     * @dev Malicious contract that tries to reenter ERC20Example.mint()
-     */
-    contract MaliciousMinter {
-        ERC20Example public token;
-        
-        constructor(ERC20Example _token) {
-            token = _token;
-        }
-        
-        function attack(address to, uint256 amount) external {
-            // First mint call
-            token.mint(to, amount);
-            
-            // Try to reenter - should be blocked
-            token.mint(to, amount);
-        }
-    }
-    
     // ============ Tests for Multiple Reentrancy Attempts ============
     
     /**
@@ -505,40 +537,6 @@ contract VrfConsumerReentrancyTest is Test {
         uint256 expectedReward = entryFee * 2;
         assertEq(maliciousToken.balanceOf(participant1), expectedReward, "Winner should receive correct reward");
         assertEq(maliciousToken.totalSupply(), expectedReward, "Total supply should be correct");
-    }
-    
-    /**
-     * @dev Malicious token that attempts multiple reentrancy attacks
-     */
-    contract MaliciousMultiReentrantToken is ERC20Example {
-        VrfConsumer public target;
-        uint256 public attemptCount;
-        
-        constructor(
-            string memory name,
-            string memory symbol,
-            uint256 cap,
-            address owner,
-            VrfConsumer _target
-        ) ERC20Example(name, symbol, cap, owner) {
-            target = _target;
-        }
-        
-        function _update(
-            address from,
-            address to,
-            uint256 value
-        ) internal override {
-            if (to != address(0) && value > 0 && attemptCount < 3) {
-                attemptCount++;
-                
-                // Try multiple reentrancy attempts
-                try target.participateInLottery{value: target.lotteryEntryFee()}() {} catch {}
-                try target.requestRandomWords() {} catch {}
-            }
-            
-            super._update(from, to, value);
-        }
     }
     
     // ============ Tests for Edge Cases ============
@@ -664,4 +662,3 @@ contract VrfConsumerReentrancyTest is Test {
         assertNotEq(requestId1, requestId2, "Request IDs should be different");
     }
 }
-
