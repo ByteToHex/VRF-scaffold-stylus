@@ -57,13 +57,16 @@ if [ "$IS_LOCAL_NODE" = false ]; then
   # Try to find .env file in multiple locations
   ENV_FILE=""
   
-  # 1. Check in project root (workspace root)
-  if [ -f "$SCRIPT_DIR/../../.env" ]; then
+  # 1. Check in packages/stylus directory (shared with stylus deployment scripts) - first priority
+  if [ -f "$SCRIPT_DIR/../stylus/.env" ]; then
+    ENV_FILE="$SCRIPT_DIR/../stylus/.env"
+  # 2. Check in project root (workspace root)
+  elif [ -f "$SCRIPT_DIR/../../.env" ]; then
     ENV_FILE="$SCRIPT_DIR/../../.env"
-  # 2. Check in packages/solidity directory
+  # 3. Check in packages/solidity directory
   elif [ -f "$SCRIPT_DIR/.env" ]; then
     ENV_FILE="$SCRIPT_DIR/.env"
-  # 3. Check in current directory
+  # 4. Check in current directory
   elif [ -f ".env" ]; then
     ENV_FILE=".env"
   fi
