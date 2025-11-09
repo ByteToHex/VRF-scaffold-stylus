@@ -132,11 +132,14 @@ contract VrfConsumer is Ownable, ReentrancyGuard {
      */
     function requestRandomWords() external returns (uint256 requestId) {
         // Check if enough time has passed since last request
-        uint256 intervalSecs = lotteryIntervalHours * 3600;
-        require(
-            block.timestamp >= lastRequestTimestamp + intervalSecs,
-            "Too soon to resolve lottery"
-        );
+        // Allow first call when lastRequestTimestamp is 0
+        if (lastRequestTimestamp > 0) {
+            uint256 intervalSecs = lotteryIntervalHours * 3600;
+            require(
+                block.timestamp >= lastRequestTimestamp + intervalSecs,
+                "Too soon to resolve lottery"
+            );
+        }
 
         // Update state BEFORE external call (Checks-Effects-Interactions pattern)
         lastRequestTimestamp = block.timestamp;
@@ -382,20 +385,35 @@ contract VrfConsumer is Ownable, ReentrancyGuard {
      * @dev Prepare extra args for native payment to VRF wrapper
      * Format: abi.encodeWithSelector(EXTRA_ARGS_V1_TAG, extraArgs)
      * where EXTRA_ARGS_V1_TAG = bytes4(keccak256("VRF ExtraArgsV1")) = 0x92fd1338
-     * @return extraArgs The encoded extra args
+     * This matches the exact encoding format used in the Rust implementation
+     * Format: [4 bytes tag][28 bytes padding][4 bytes bool][28 bytes padding] = 64 bytes total
+     * @return extraArgs The encoded extra args (64 bytes total)
      */
     function getExtraArgsForNativePayment()
         internal
         pure
         returns (bytes memory)
     {
+        // Manually construct the 64-byte encoding to match Rust implementation exactly
+        // Rust format: [0x92, 0xfd, 0x13, 0x38][28 zeros][0x00, 0x00, 0x00, 0x01][28 zeros]
         // EXTRA_ARGS_V1_TAG = 0x92fd1338
-        bytes4 tag = 0x92fd1338;
-        // Struct: { bool nativePayment }
-        // nativePayment = true
-        bool nativePayment = true;
-
-        return abi.encodeWithSelector(tag, nativePayment);
+        bytes memory extraArgs = new bytes(64);
+        
+        // Set the tag at the beginning (bytes 0-3)
+        extraArgs[0] = 0x92;
+        extraArgs[1] = 0xfd;
+        extraArgs[2] = 0x13;
+        extraArgs[3] = 0x38;
+        
+        // Bytes 4-31 are already zeros (padding)
+        
+        // Set nativePayment = true at bytes 32-35 (0x00000001)
+        // The bool value is at the last byte of the 4-byte slot
+        extraArgs[35] = 0x01; // nativePayment: true
+        
+        // Bytes 36-63 are already zeros (final padding)
+        
+        return extraArgs;
     }
 }
 
