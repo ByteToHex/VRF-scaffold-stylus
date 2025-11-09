@@ -26,7 +26,8 @@ In an effort to improve deployment efficiency and security, the contracts were m
 - All contract interactions now use the Solidity ABI instead of the Stylus interface
 
 **Known Issue:**
-- Despite the migration and improvements, **the bug where VRF requests are never fulfilled by ChainLink still remains unresolved**. Requests are successfully sent to the VRF wrapper, but the `rawFulfillRandomWords` callback is never triggered by ChainLink's oracle network. This issue persists across both the original Stylus deployment and the new Solidity version. It may be related to underlying VRF wrapper configuration or network-specific ChainLink setup.
+- Despite the migration and improvements, **the bug where VRF requests are never fulfilled by ChainLink still remains unresolved**. Requests are successfully sent to the VRF wrapper, but the `rawFulfillRandomWords` callback is never triggered by ChainLink's oracle network. This issue persists across both the original Stylus deployment and the new Solidity version. 
+- As I have implemented the official **IVRFV2PlusWrapper** from *@chainlink/contracts/src/v0.8/vrf/dev/interfaces/IVRFV2PlusWrapper.sol*, the issue may be related to some other underlying VRF wrapper configuration or network-specific ChainLink setup.
 
 ---
 
