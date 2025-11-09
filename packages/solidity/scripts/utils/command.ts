@@ -14,16 +14,32 @@ export async function buildDeployCommand(
   // Build constructor args string if provided
   let constructorArgs = "";
   if (deployOptions.constructorArgs && deployOptions.constructorArgs.length > 0) {
-    const argsString = deployOptions.constructorArgs
+    // Foundry's --constructor-args expects each argument separately
+    // Format each argument properly to avoid shell parsing issues
+    const formattedArgs = deployOptions.constructorArgs
       .map((arg) => {
         // Handle different types of arguments
         if (typeof arg === "string" && arg.startsWith("0x")) {
-          return arg; // Address or hex string
+          // Address or hex string - pass as-is (no quotes needed)
+          return arg;
         }
-        return JSON.stringify(arg);
-      })
-      .join(" ");
-    constructorArgs = `--constructor-args ${argsString}`;
+        if (typeof arg === "string") {
+          // For strings, escape quotes and wrap in quotes
+          const escaped = arg.replace(/"/g, '\\"');
+          return `"${escaped}"`;
+        }
+        if (typeof arg === "number" || typeof arg === "bigint") {
+          return arg.toString();
+        }
+        // For other types, stringify and escape properly
+        const stringified = JSON.stringify(arg);
+        const escaped = stringified.replace(/"/g, '\\"');
+        return `"${escaped}"`;
+      });
+    
+    // Join with spaces - Foundry will parse each argument separately
+    // Each argument is already properly quoted/escaped
+    constructorArgs = `--constructor-args ${formattedArgs.join(" ")}`;
   }
 
   // Build forge create command
