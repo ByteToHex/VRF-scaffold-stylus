@@ -95,11 +95,17 @@ ABI_DIR="../stylus/deployments/abis"
 DEPLOYMENT_DIR="../stylus/deployments"
 
 # Get chain ID (use CHAIN_ID env var if set, otherwise query from RPC)
+# For local network, use 412346 (Arbitrum Nitro DevNode)
 if [ -z "$CHAIN_ID" ]; then
-  CHAIN_ID=$(cast chain-id --rpc-url $RPC_URL 2>/dev/null || echo "421614")
-  if [ -z "$CHAIN_ID" ]; then
-    echo "⚠️  Could not determine chain ID, defaulting to 421614 (Arbitrum Sepolia)"
-    CHAIN_ID="421614"
+  if [[ "$RPC_URL" == *"127.0.0.1:8547"* ]] || [[ "$RPC_URL" == *"localhost"* ]]; then
+    CHAIN_ID="412346"
+    echo "ℹ️  Using chain ID 412346 for local network"
+  else
+    CHAIN_ID=$(cast chain-id --rpc-url $RPC_URL 2>/dev/null || echo "421614")
+    if [ -z "$CHAIN_ID" ]; then
+      echo "⚠️  Could not determine chain ID, defaulting to 421614 (Arbitrum Sepolia)"
+      CHAIN_ID="421614"
+    fi
   fi
 fi
 
@@ -341,6 +347,130 @@ cat > $DEPLOYMENT_INFO <<EOF
   }
 }
 EOF
+
+# Function to create chainId_latest.json file (Stylus format)
+create_chain_deployment_file() {
+  local contract_name="$1"
+  local address="$2"
+  local tx_hash="$3"
+  local contract_folder="$4"
+  local chain_id="$5"
+  
+  local chain_file="$DEPLOYMENT_DIR/${chain_id}_latest.json"
+  
+  # Read existing deployments or start fresh
+  local deployments_json="{}"
+  if [ -f "$chain_file" ]; then
+    deployments_json=$(cat "$chain_file" 2>/dev/null || echo "{}")
+  fi
+  
+  # Update with new contract (using jq if available, otherwise node/python)
+  if command -v jq &> /dev/null; then
+    deployments_json=$(echo "$deployments_json" | jq --arg name "$contract_name" \
+      --arg addr "$address" \
+      --arg tx "$tx_hash" \
+      --arg folder "$contract_folder" \
+      '. + {($name): {address: $addr, txHash: $tx, contract: $folder}}')
+  elif command -v node &> /dev/null; then
+    # Use node.js for JSON manipulation (write to temp file to avoid shell escaping issues)
+    local temp_file=$(mktemp)
+    echo "$deployments_json" > "$temp_file"
+    deployments_json=$(node -e "
+      const fs = require('fs');
+      const data = JSON.parse(fs.readFileSync('$temp_file', 'utf8') || '{}');
+      data['$contract_name'] = {
+        address: '$address',
+        txHash: '$tx_hash',
+        contract: '$contract_folder'
+      };
+      console.log(JSON.stringify(data, null, 2));
+    ")
+    rm -f "$temp_file"
+  elif command -v python3 &> /dev/null; then
+    # Use python3 for JSON manipulation (write to temp file to avoid shell escaping issues)
+    local temp_file=$(mktemp)
+    echo "$deployments_json" > "$temp_file"
+    deployments_json=$(python3 -c "
+import json
+with open('$temp_file', 'r') as f:
+    content = f.read()
+    data = json.loads(content) if content.strip() else {}
+data['$contract_name'] = {
+    'address': '$address',
+    'txHash': '$tx_hash',
+    'contract': '$contract_folder'
+}
+print(json.dumps(data, indent=2))
+")
+    rm -f "$temp_file"
+  else
+    echo "⚠️  Warning: jq, node, or python3 not found. Cannot update ${chain_id}_latest.json properly."
+    echo "   Please install jq for proper JSON handling: https://stedolan.github.io/jq/download/"
+    return 1
+  fi
+  
+  echo "$deployments_json" > "$chain_file"
+  echo "💾 Updated ${chain_id}_latest.json with $contract_name"
+}
+
+# Function to create contract folder with abi.json
+create_contract_folder() {
+  local contract_name="$1"
+  local abi_file="$2"
+  
+  local contract_dir="$DEPLOYMENT_DIR/$contract_name"
+  mkdir -p "$contract_dir"
+  
+  if [ -f "$abi_file" ]; then
+    cp "$abi_file" "$contract_dir/abi.json"
+    echo "📁 Created $contract_name/abi.json"
+  fi
+}
+
+# Function to create contract-name file (Stylus ABI export format)
+create_contract_name_file() {
+  local contract_name_lower="$1"
+  local abi_file="$2"
+  local interface_name="$3"
+  
+  local output_file="$DEPLOYMENT_DIR/$contract_name_lower"
+  
+  if [ -f "$abi_file" ]; then
+    # Read ABI JSON
+    local abi_content
+    if command -v jq &> /dev/null; then
+      abi_content=$(cat "$abi_file" | jq -c '.')
+    else
+      abi_content=$(cat "$abi_file")
+    fi
+    
+    # Create file in Stylus export format
+    cat > "$output_file" <<EOF
+
+======= <stdin>:$interface_name =======
+Contract JSON ABI
+$abi_content
+EOF
+    echo "📄 Created $contract_name_lower file"
+  fi
+}
+
+# Create chainId_latest.json files for each contract
+echo "📝 Creating chain-specific deployment files..."
+if [ -n "$MOCK_VRF" ]; then
+  create_chain_deployment_file "MockVRFV2PlusWrapper" "$MOCK_VRF" "$MOCK_VRF_TX" "MockVRFV2PlusWrapper" "$CHAIN_ID"
+  create_contract_folder "MockVRFV2PlusWrapper" "$ABI_DIR/MockVRFV2PlusWrapper.json"
+  create_contract_name_file "mock-vrf-v2-plus-wrapper" "$ABI_DIR/MockVRFV2PlusWrapper.json" "IMockVRFV2PlusWrapper"
+fi
+
+create_chain_deployment_file "ERC20Example" "$ERC20" "$ERC20_TX" "ERC20Example" "$CHAIN_ID"
+create_contract_folder "ERC20Example" "$ABI_DIR/ERC20Example.json"
+create_contract_name_file "erc20-example" "$ABI_DIR/ERC20Example.json" "IERC20Example"
+
+create_chain_deployment_file "VrfConsumer" "$VRF" "$VRF_TX" "VrfConsumer" "$CHAIN_ID"
+create_contract_folder "VrfConsumer" "$ABI_DIR/VrfConsumer.json"
+create_contract_name_file "vrf-consumer" "$ABI_DIR/VrfConsumer.json" "IVrfConsumer"
+echo ""
 
 echo "=========================================="
 echo "✅ Deployment Complete!"
