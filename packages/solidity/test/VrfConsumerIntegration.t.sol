@@ -83,6 +83,13 @@ contract VrfConsumerIntegrationTest is Test {
         // Fast forward time to allow request
         vm.warp(block.timestamp + vrfConsumer.lotteryIntervalHours() * 3600 + 1);
         
+        // Fund VRF consumer for request
+        uint256 expectedPrice = mockVrfWrapper.calculateRequestPriceNative(
+            uint32(vrfConsumer.callbackGasLimit()),
+            uint32(vrfConsumer.numWords())
+        );
+        vm.deal(address(vrfConsumer), expectedPrice);
+        
         // Request random words
         uint256 requestId = vrfConsumer.requestRandomWords();
         
@@ -118,6 +125,13 @@ contract VrfConsumerIntegrationTest is Test {
         vrfConsumer.participateInLottery{value: entryFee}();
         
         vm.warp(block.timestamp + vrfConsumer.lotteryIntervalHours() * 3600 + 1);
+        
+        // Fund VRF consumer for request
+        uint256 expectedPrice = mockVrfWrapper.calculateRequestPriceNative(
+            uint32(vrfConsumer.callbackGasLimit()),
+            uint32(vrfConsumer.numWords())
+        );
+        vm.deal(address(vrfConsumer), expectedPrice);
         
         uint256 requestId = vrfConsumer.requestRandomWords();
         
@@ -165,6 +179,13 @@ contract VrfConsumerIntegrationTest is Test {
         
         vm.warp(block.timestamp + vrfConsumer.lotteryIntervalHours() * 3600 + 1);
         
+        // Fund VRF consumer for request
+        uint256 expectedPrice = mockVrfWrapper.calculateRequestPriceNative(
+            uint32(vrfConsumer.callbackGasLimit()),
+            uint32(vrfConsumer.numWords())
+        );
+        vm.deal(address(vrfConsumer), expectedPrice);
+        
         uint256 requestId = vrfConsumer.requestRandomWords();
         
         uint256[] memory randomWords = new uint256[](1);
@@ -201,6 +222,13 @@ contract VrfConsumerIntegrationTest is Test {
         vrfConsumer.participateInLottery{value: lowCap / 2 + 1}();
         
         vm.warp(block.timestamp + vrfConsumer.lotteryIntervalHours() * 3600 + 1);
+        
+        // Fund VRF consumer for request
+        uint256 expectedPrice2 = mockVrfWrapper.calculateRequestPriceNative(
+            uint32(vrfConsumer.callbackGasLimit()),
+            uint32(vrfConsumer.numWords())
+        );
+        vm.deal(address(vrfConsumer), expectedPrice2);
         
         requestId = vrfConsumer.requestRandomWords();
         randomWords[0] = 1;
@@ -251,6 +279,13 @@ contract VrfConsumerIntegrationTest is Test {
         vrfConsumer.participateInLottery{value: entryFee}();
         
         vm.warp(block.timestamp + vrfConsumer.lotteryIntervalHours() * 3600 + 1);
+        
+        // Fund VRF consumer for request
+        uint256 expectedPrice = mockVrfWrapper.calculateRequestPriceNative(
+            uint32(vrfConsumer.callbackGasLimit()),
+            uint32(vrfConsumer.numWords())
+        );
+        vm.deal(address(vrfConsumer), expectedPrice);
         
         uint256 requestId = vrfConsumer.requestRandomWords();
         
