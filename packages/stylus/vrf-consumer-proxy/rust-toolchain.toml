@@ -1,0 +1,9 @@
+[toolchain]
+channel = "nightly-2024-12-01"
+components = ["rustfmt", "clippy"]
+targets = ["wasm32-unknown-unknown"]
+
+# NOTE: this toolchain is nightly because of openzeppelin requirements
+# See: https://github.com/OpenZeppelin/rust-contracts-stylus#readme
+# Also note that we use nightly because of the size limit (issue <https://github.com/OpenZeppelin/rust-contracts-stylus/issues/129>).
+
