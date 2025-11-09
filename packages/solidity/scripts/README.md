@@ -4,12 +4,11 @@ This directory contains scripts for deploying and testing the Solidity contracts
 
 ## Scripts
 
-### `deploy.sh` / `deploy.ps1`
+### `deploy.sh`
 Deploys all contracts (MockVRFV2PlusWrapper, ERC20Example, VrfConsumer) and configures them for integration.
 
 **Usage:**
 - Linux/Mac: `chmod +x deploy.sh && ./deploy.sh`
-- Windows: `.\deploy.ps1`
 
 **Environment Variables:**
 - `RPC_URL` - RPC endpoint (default: `http://127.0.0.1:8547`)
