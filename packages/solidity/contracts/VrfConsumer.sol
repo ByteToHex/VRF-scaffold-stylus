@@ -298,7 +298,11 @@ contract VrfConsumer is Ownable, ReentrancyGuard {
      * @return The price in wei
      */
     function getRequestPrice() external view returns (uint256) {
+        // casting to 'uint32' is safe because callbackGasLimit is initialized to 100000 and will not exceed uint32 max
+        // forge-lint: disable-next-line(unsafe-typecast)
         uint32 callbackGasLimitValue = uint32(callbackGasLimit);
+        // casting to 'uint32' is safe because numWords is initialized to 1 and will not exceed uint32 max
+        // forge-lint: disable-next-line(unsafe-typecast)
         uint32 numWordsValue = uint32(numWords);
 
         IVRFV2PlusWrapper vrfWrapper = IVRFV2PlusWrapper(iVrfV2PlusWrapper);
