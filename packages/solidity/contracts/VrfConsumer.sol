@@ -39,6 +39,13 @@ contract VrfConsumer is Ownable, ReentrancyGuard {
     uint256 public lastFulfilledValue;
     address public lastWinner;
 
+    // Request tracking variables (from DirectFundingConsumer)
+    mapping(uint256 => uint256) public sRequestsPaid; // store the amount paid for request random words
+    mapping(uint256 => uint256) public sRequestsValue; // store random word returned
+    mapping(uint256 => bool) public sRequestsFulfilled; // store if request was fulfilled
+    uint256[] public requestIds;
+    uint256 public lastRequestId;
+
     uint256 public callbackGasLimit;
     uint256 public requestConfirmations;
     uint256 public numWords;
@@ -154,6 +161,14 @@ contract VrfConsumer is Ownable, ReentrancyGuard {
             numWordsValue
         );
 
+        // Store request status in separate mappings
+        sRequestsFulfilled[requestId] = false;
+        sRequestsPaid[requestId] = reqPrice;
+
+        // Add to request IDs array and update last request ID
+        requestIds.push(requestId);
+        lastRequestId = requestId;
+
         emit RequestSent(requestId, numWordsValue, reqPrice);
 
         return requestId;
@@ -208,11 +223,22 @@ contract VrfConsumer is Ownable, ReentrancyGuard {
         uint256 requestId,
         uint256[] memory randomWords
     ) internal {
-        // Store only the last fulfilled request
+        uint256 paidAmount = sRequestsPaid[requestId];
+        require(paidAmount > 0, "Request not found");
+
+        // Update request fulfillment status
+        sRequestsFulfilled[requestId] = true;
+
+        // Store random value for this request
         uint256 fulfilledValue = randomWords.length > 0
             ? randomWords[0]
             : 0;
+        
+        if (randomWords.length > 0) {
+            sRequestsValue[requestId] = randomWords[0];
+        }
 
+        // Store only the last fulfilled request (for backward compatibility)
         lastFulfilledId = requestId;
         lastFulfilledValue = fulfilledValue;
         acceptingParticipants = false;
@@ -263,6 +289,48 @@ contract VrfConsumer is Ownable, ReentrancyGuard {
      */
     function getLastWinner() external view returns (address) {
         return lastWinner;
+    }
+
+    /**
+     * @dev Get the status of a randomness request
+     * @param requestId The VRF request ID
+     * @return paid The amount paid for the request
+     * @return fulfilled Whether the request has been fulfilled
+     * @return randomWord The random word returned (0 if not fulfilled)
+     */
+    function getRequestStatus(
+        uint256 requestId
+    ) external view returns (uint256 paid, bool fulfilled, uint256 randomWord) {
+        paid = sRequestsPaid[requestId];
+        require(paid > 0, "Request not found");
+        
+        fulfilled = sRequestsFulfilled[requestId];
+        randomWord = sRequestsValue[requestId];
+        
+        return (paid, fulfilled, randomWord);
+    }
+
+    /**
+     * @dev Get the last request ID
+     * @return The last request ID
+     */
+    function getLastRequestId() external view returns (uint256) {
+        return lastRequestId;
+    }
+
+    /**
+     * @dev View: get the current native price required to request randomness
+     * @return The price in wei
+     */
+    function getRequestPrice() external view returns (uint256) {
+        uint32 callbackGasLimitValue = uint32(callbackGasLimit);
+        uint32 numWordsValue = uint32(numWords);
+
+        IVRFV2PlusWrapper vrfWrapper = IVRFV2PlusWrapper(iVrfV2PlusWrapper);
+        return vrfWrapper.calculateRequestPriceNative(
+            callbackGasLimitValue,
+            numWordsValue
+        );
     }
 
     /**
