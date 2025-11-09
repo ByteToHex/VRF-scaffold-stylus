@@ -14,6 +14,25 @@ Deploys all contracts (MockVRFV2PlusWrapper, ERC20Example, VrfConsumer) and conf
 - `RPC_URL` - RPC endpoint (default: `http://127.0.0.1:8547`)
 - `PRIVATE_KEY` - Private key for deployment (default: dev node key)
 
+**`.env` File Support:**
+The script automatically loads environment variables from a `.env` file, but **only when not deploying to a local node**. 
+
+- **Local node detection**: If `RPC_URL` is empty, points to `127.0.0.1:8547`, or contains `localhost`, the `.env` file is skipped
+- **Non-local networks**: When deploying to testnets/mainnets, the script will look for `.env` files in:
+  1. Project root (workspace root)
+  2. `packages/solidity/` directory
+  3. Current working directory
+
+The `.env` file should contain `KEY=VALUE` pairs (one per line). Comments (lines starting with `#`) and empty lines are ignored. Example:
+```
+RPC_URL=https://sepolia-rollup.arbitrum.io/rpc
+PRIVATE_KEY=0x...
+ARBISCAN_API_KEY=your_api_key_here
+CHAIN_ID=421614
+```
+
+**Note:** Environment variables set in your shell take precedence over `.env` file values.
+
 **Output:**
 - Contract addresses printed to console
 - ABIs exported to `../deployments/abis/`
@@ -85,6 +104,8 @@ export RPC_URL=http://127.0.0.1:8547
 ```
 
 ### Deploy to Testnet
+
+**Option 1: Using environment variables**
 ```bash
 export RPC_URL=https://sepolia-rollup.arbitrum.io/rpc
 export PRIVATE_KEY=your_private_key_here
@@ -92,7 +113,25 @@ export ARBISCAN_API_KEY=your_arbiscan_api_key_here
 ./deploy.sh
 ```
 
-**Note:** If `ARBISCAN_API_KEY` is set, contracts will be automatically verified after deployment.
+**Option 2: Using .env file (recommended)**
+Create a `.env` file in the project root:
+```bash
+RPC_URL=https://sepolia-rollup.arbitrum.io/rpc
+PRIVATE_KEY=your_private_key_here
+ARBISCAN_API_KEY=your_arbiscan_api_key_here
+CHAIN_ID=421614
+```
+
+Then simply run:
+```bash
+./deploy.sh
+```
+
+The script will automatically detect it's not a local node and load the `.env` file.
+
+**Note:** 
+- If `ARBISCAN_API_KEY` is set, contracts will be automatically verified after deployment
+- The `.env` file is **not** loaded when deploying to local nodes (127.0.0.1:8547 or localhost)
 
 ### Test Deployed Contracts
 ```bash

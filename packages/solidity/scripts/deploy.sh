@@ -6,7 +6,88 @@
 
 set -e  # Exit on error
 
-# Configuration
+# Function to load .env file
+load_env_file() {
+  local env_file="$1"
+  if [ -f "$env_file" ]; then
+    echo "📋 Loading environment variables from .env file..."
+    # Export variables from .env file, ignoring comments and empty lines
+    while IFS= read -r line || [ -n "$line" ]; do
+      # Skip comments and empty lines
+      [[ "$line" =~ ^[[:space:]]*# ]] && continue
+      [[ -z "${line// }" ]] && continue
+      # Export the variable if it's in KEY=VALUE format
+      if [[ "$line" =~ ^[[:space:]]*([^#=]+)=(.*)$ ]]; then
+        local key="${line%%=*}"
+        local value="${line#*=}"
+        # Remove leading/trailing whitespace from key
+        key="${key#"${key%%[![:space:]]*}"}"
+        key="${key%"${key##*[![:space:]]}"}"
+        # Remove quotes from value if present
+        value="${value#\"}"
+        value="${value%\"}"
+        value="${value#\'}"
+        value="${value%\'}"
+        # Only export if key is not empty
+        if [ -n "$key" ]; then
+          export "$key"="$value"
+        fi
+      fi
+    done < "$env_file"
+    echo "✅ Environment variables loaded"
+  fi
+}
+
+# Check if we're explicitly on a local node (check RPC_URL from environment)
+# If RPC_URL is explicitly set to localhost, skip .env loading
+# Otherwise, we'll try to load .env and check again
+IS_LOCAL_NODE=false
+CURRENT_RPC_URL="${RPC_URL:-}"
+if [[ -n "$CURRENT_RPC_URL" ]] && \
+   ([[ "$CURRENT_RPC_URL" == *"127.0.0.1:8547"* ]] || \
+    [[ "$CURRENT_RPC_URL" == *"localhost"* ]]); then
+  IS_LOCAL_NODE=true
+fi
+
+# Load .env file ONLY if not explicitly on local node
+if [ "$IS_LOCAL_NODE" = false ]; then
+  # Navigate to script directory first to establish base path
+  SCRIPT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
+  
+  # Try to find .env file in multiple locations
+  ENV_FILE=""
+  
+  # 1. Check in project root (workspace root)
+  if [ -f "$SCRIPT_DIR/../../.env" ]; then
+    ENV_FILE="$SCRIPT_DIR/../../.env"
+  # 2. Check in packages/solidity directory
+  elif [ -f "$SCRIPT_DIR/.env" ]; then
+    ENV_FILE="$SCRIPT_DIR/.env"
+  # 3. Check in current directory
+  elif [ -f ".env" ]; then
+    ENV_FILE=".env"
+  fi
+  
+  # Load .env if found
+  if [ -n "$ENV_FILE" ] && [ -f "$ENV_FILE" ]; then
+    load_env_file "$ENV_FILE"
+    echo ""
+  else
+    echo "ℹ️  No .env file found, using environment variables and defaults"
+    echo ""
+  fi
+else
+  echo "ℹ️  Local node detected, skipping .env file loading"
+  echo ""
+fi
+
+# Configuration (after .env loading so env vars can override defaults)
+# Check again if RPC_URL is now pointing to localhost (might have been set in .env)
+if [[ -n "${RPC_URL:-}" ]] && \
+   ([[ "$RPC_URL" == *"127.0.0.1:8547"* ]] || [[ "$RPC_URL" == *"localhost"* ]]); then
+  echo "ℹ️  RPC_URL points to localhost, using local node configuration"
+fi
+
 RPC_URL=${RPC_URL:-http://127.0.0.1:8547}
 PRIVATE_KEY=${PRIVATE_KEY:-0xb6b15c8cb491557369f3c7d2c287b053eb229daa9c22138887752191c9520659}
 OWNER_ADDRESS=$(cast wallet address $PRIVATE_KEY)
