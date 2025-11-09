@@ -3,21 +3,7 @@ pragma solidity ^0.8.20;
 
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
-
-// VRF V2+ Wrapper interface
-interface IVRFV2PlusWrapper {
-    function calculateRequestPriceNative(
-        uint32 _callbackGasLimit,
-        uint32 _numWords
-    ) external view returns (uint256);
-
-    function requestRandomWordsInNative(
-        uint32 _callbackGasLimit,
-        uint16 _requestConfirmations,
-        uint32 _numWords,
-        bytes calldata extraArgs
-    ) external payable returns (uint256 requestId);
-}
+import {IVRFV2PlusWrapper} from "@chainlink/contracts/src/v0.8/vrf/dev/interfaces/IVRFV2PlusWrapper.sol";
 
 // ERC20 interface - minimal interface with only functions we use
 interface IERC20 {
@@ -133,14 +119,16 @@ contract VrfConsumer is Ownable, ReentrancyGuard {
      */
     function requestRandomWords() external returns (uint256 requestId) {
         // Check if enough time has passed since last request
-        // Allow first call when lastRequestTimestamp is 0
-        if (lastRequestTimestamp > 0) {
-            uint256 intervalSecs = lotteryIntervalHours * 3600;
-            require(
-                block.timestamp >= lastRequestTimestamp + intervalSecs,
-                "Too soon to resolve lottery"
-            );
-        }
+        // For first call (lastRequestTimestamp == 0), require block.timestamp >= intervalSecs
+        // For subsequent calls, require block.timestamp >= lastRequestTimestamp + intervalSecs
+        uint256 intervalSecs = lotteryIntervalHours * 3600;
+        uint256 requiredTime = lastRequestTimestamp == 0 
+            ? intervalSecs 
+            : lastRequestTimestamp + intervalSecs;
+        require(
+            block.timestamp >= requiredTime,
+            "Too soon to resolve lottery"
+        );
 
         // Update state BEFORE external call (Checks-Effects-Interactions pattern)
         lastRequestTimestamp = block.timestamp;

@@ -455,3 +455,17 @@ echo "  1. Use the addresses above to interact with contracts"
 echo "  2. See scripts/test.sh for testing examples"
 echo "  3. ABIs are available in $ABI_DIR/"
 echo ""
+
+# Copy deployedContracts.ts to requiredContracts .ts
+echo "📋 Updating requiredContracts.ts..."
+DEPLOYED_CONTRACTS_FILE="../nextjs/contracts/deployedContracts.ts"
+REQUIRED_CONTRACTS_FILE="../nextjs/contracts/requiredContracts .ts"
+
+if [ -f "$DEPLOYED_CONTRACTS_FILE" ]; then
+  cp "$DEPLOYED_CONTRACTS_FILE" "$REQUIRED_CONTRACTS_FILE"
+  echo "✅ Successfully copied deployedContracts.ts to requiredContracts .ts"
+else
+  echo "⚠️  deployedContracts.ts not found at $DEPLOYED_CONTRACTS_FILE"
+  echo "   Skipping requiredContracts .ts update"
+fi
+echo ""
