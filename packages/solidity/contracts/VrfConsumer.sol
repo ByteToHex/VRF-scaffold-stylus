@@ -3,21 +3,7 @@ pragma solidity ^0.8.20;
 
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
-
-// VRF V2+ Wrapper interface
-interface IVRFV2PlusWrapper {
-    function calculateRequestPriceNative(
-        uint32 _callbackGasLimit,
-        uint32 _numWords
-    ) external view returns (uint256);
-
-    function requestRandomWordsInNative(
-        uint32 _callbackGasLimit,
-        uint16 _requestConfirmations,
-        uint32 _numWords,
-        bytes calldata extraArgs
-    ) external payable returns (uint256 requestId);
-}
+import {IVRFV2PlusWrapper} from "@chainlink/contracts/src/v0.8/vrf/interfaces/IVRFV2PlusWrapper.sol";
 
 // ERC20 interface - minimal interface with only functions we use
 interface IERC20 {
