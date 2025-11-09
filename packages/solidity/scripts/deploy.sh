@@ -53,23 +53,9 @@ echo ""
 mkdir -p $ABI_DIR
 mkdir -p $DEPLOYMENT_DIR
 
-# Arbitrum Sepolia real VRF wrapper address
-ARBITRUM_SEPOLIA_VRF_WRAPPER="0x29576aB8152A09b9DC634804e4aDE73dA1f3a3CC"
-
-# Check if we're on test chain (default local RPC)
-IS_TEST_CHAIN=false
-if [[ "$RPC_URL" == "http://127.0.0.1:8547" ]] || [[ "$RPC_URL" == *"127.0.0.1:8547"* ]]; then
-  IS_TEST_CHAIN=true
-fi
-
-# Check if we're on Arbitrum Sepolia
-IS_ARBITRUM_SEPOLIA=false
-if [ "$CHAIN_ID" = "421614" ]; then
-  IS_ARBITRUM_SEPOLIA=true
-fi
-
-# Deploy Mock VRF Wrapper (only on test chain)
-if [ "$IS_TEST_CHAIN" = true ]; then
+# Determine VRF wrapper address based on network
+if [[ "$RPC_URL" == *"127.0.0.1:8547"* ]]; then
+  # Local node: Deploy MockVRFV2PlusWrapper
   echo "🚀 Deploying MockVRFV2PlusWrapper..."
   MOCK_VRF_OUTPUT=$(forge create --rpc-url $RPC_URL --private-key $PRIVATE_KEY \
     --broadcast \
@@ -77,9 +63,7 @@ if [ "$IS_TEST_CHAIN" = true ]; then
     --constructor-args $VRF_REQUEST_PRICE)
 
   MOCK_VRF=$(echo "$MOCK_VRF_OUTPUT" | grep "Deployed to:" | awk '{print $3}')
-  # Extract transaction hash from forge output (look for various patterns)
   MOCK_VRF_TX=$(echo "$MOCK_VRF_OUTPUT" | grep -iE "(Transaction hash|tx hash|txHash|transactionHash|Deployment transaction):" | grep -oE "0x[a-fA-F0-9]{64}" | head -1)
-  # If not found, try to extract from broadcast logs or any hex string that looks like a tx hash
   if [ -z "$MOCK_VRF_TX" ]; then
     MOCK_VRF_TX=$(echo "$MOCK_VRF_OUTPUT" | grep -oE "0x[a-fA-F0-9]{64}" | grep -v "$MOCK_VRF" | head -1)
   fi
@@ -98,7 +82,7 @@ if [ "$IS_TEST_CHAIN" = true ]; then
   echo "✅ MockVRFV2PlusWrapper deployed at: $MOCK_VRF"
   echo "   Transaction hash: $MOCK_VRF_TX"
 
-  # Export Mock VRF ABI (extract from compiled JSON)
+  # Export Mock VRF ABI
   if [ -f "out/MockVRFV2PlusWrapper.sol/MockVRFV2PlusWrapper.json" ]; then
     jq '.abi' out/MockVRFV2PlusWrapper.sol/MockVRFV2PlusWrapper.json > $ABI_DIR/MockVRFV2PlusWrapper.json 2>/dev/null || \
     python3 -c "import json; print(json.dumps(json.load(open('out/MockVRFV2PlusWrapper.sol/MockVRFV2PlusWrapper.json'))['abi']))" > $ABI_DIR/MockVRFV2PlusWrapper.json 2>/dev/null || \
@@ -114,22 +98,20 @@ if [ "$IS_TEST_CHAIN" = true ]; then
     echo "⚠️  Failed to update deployedContracts.ts for MockVRFV2PlusWrapper"
   fi
   echo ""
-elif [ "$IS_ARBITRUM_SEPOLIA" = true ]; then
+elif [ "$CHAIN_ID" = "421614" ]; then
+  # Arbitrum Sepolia: Use real VRF wrapper
+  MOCK_VRF="0x29576aB8152A09b9DC634804e4aDE73dA1f3a3CC"
   echo "⏭️  Skipping MockVRFV2PlusWrapper deployment (using real VRF wrapper on Arbitrum Sepolia)"
-  MOCK_VRF="$ARBITRUM_SEPOLIA_VRF_WRAPPER"
   echo "   Using Arbitrum Sepolia VRF V2+ Wrapper: $MOCK_VRF"
   echo ""
 else
-  echo "⏭️  Skipping MockVRFV2PlusWrapper deployment (only deployed on test chain: http://127.0.0.1:8547)"
-  echo "   Using existing MockVRFV2PlusWrapper address or external VRF wrapper"
-  echo ""
-  
-  # For other networks, we need to get the VRF wrapper address from environment
-  # You can set MOCK_VRF_ADDRESS env var if you have a pre-deployed mock, or use a real VRF wrapper address
+  # Other networks: Use MOCK_VRF_ADDRESS env var
   if [ -n "$MOCK_VRF_ADDRESS" ]; then
     MOCK_VRF="$MOCK_VRF_ADDRESS"
+    echo "⏭️  Skipping MockVRFV2PlusWrapper deployment"
     echo "   Using provided VRF wrapper address: $MOCK_VRF"
   else
+    echo "⏭️  Skipping MockVRFV2PlusWrapper deployment"
     echo "⚠️  MOCK_VRF_ADDRESS not set. VrfConsumer deployment may fail if it requires a VRF wrapper."
     echo "   Set MOCK_VRF_ADDRESS environment variable with the VRF wrapper address."
     MOCK_VRF=""
