@@ -9,8 +9,8 @@ import { LotteryEntryFeeDisplay } from "./LotteryEntryFeeDisplay";
 import { ParticipateInLotteryForm } from "./ParticipateInLotteryForm";
 import requiredContracts from "~~/contracts/requiredContracts ";
 
-const ERC20_CONTRACT_NAME = "erc20-example";
-const VRF_CONTRACT_NAME = "vrf-consumer";
+const ERC20_CONTRACT_NAME = "erc20-example-solidity";
+const VRF_CONTRACT_NAME = "vrf-consumer-solidity";
 
 export const ERC20Interactions = () => {
   const [refreshDisplayVariables, triggerRefreshDisplayVariables] = useReducer(value => !value, false);
