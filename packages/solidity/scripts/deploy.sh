@@ -279,4 +279,3 @@ echo "  1. Use the addresses above to interact with contracts"
 echo "  2. See scripts/test.sh for testing examples"
 echo "  3. ABIs are available in $ABI_DIR/"
 echo ""
-
