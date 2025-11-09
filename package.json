@@ -5,7 +5,8 @@
   "workspaces": {
     "packages": [
       "packages/stylus",
-      "packages/nextjs"
+      "packages/nextjs",
+      "packages/solidity"
     ]
   },
   "scripts": {
@@ -32,6 +33,8 @@
     "stylus:format": "yarn workspace @ss/stylus format",
     "stylus:lint": "yarn workspace @ss/stylus lint",
     "stylus:test": "yarn workspace @ss/stylus test",
+    "solidity:deploy": "yarn workspace @ss/solidity deploy",
+    "solidity:export-abi": "yarn workspace @ss/solidity export-abi",
     "test": "yarn stylus:test",
     "vercel": "yarn workspace @ss/nextjs vercel",
     "vercel:yolo": "yarn workspace @ss/nextjs vercel:yolo",

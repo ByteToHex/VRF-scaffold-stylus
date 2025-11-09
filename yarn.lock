@@ -4520,6 +4520,28 @@ __metadata:
   languageName: unknown
   linkType: soft
 
+"@ss/solidity@workspace:packages/solidity":
+  version: 0.0.0-use.local
+  resolution: "@ss/solidity@workspace:packages/solidity"
+  dependencies:
+    "@types/node": ^20.0.0
+    "@types/yargs": ^17.0.32
+    "@typescript-eslint/eslint-plugin": ^6.0.0
+    "@typescript-eslint/parser": ^6.0.0
+    abitype: ^1.0.8
+    dotenv: ^16.0.0
+    eslint: ^8.0.0
+    ethers: ^6.15.0
+    jest: ^29.0.0
+    prettier: ^3.6.2
+    ts-jest: ^29.0.0
+    ts-node: ^10.9.2
+    typescript: ^5.3.0
+    viem: ^1.19.9
+    yargs: ^17.7.2
+  languageName: unknown
+  linkType: soft
+
 "@ss/stylus@workspace:packages/stylus":
   version: 0.0.0-use.local
   resolution: "@ss/stylus@workspace:packages/stylus"
