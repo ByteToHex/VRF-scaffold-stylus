@@ -265,21 +265,24 @@ contract VrfConsumerE2ETest is Test {
             uint32(vrfConsumer.numWords())
         );
         
-        // Try to request immediately - should fail (but will also fail due to insufficient funds)
-        // So we need to fund it first, but it should still fail due to time interval
+        uint256 intervalSecs = vrfConsumer.lotteryIntervalHours() * 3600;
+        
+        // Try to request immediately - should fail due to time interval
+        // lastRequestTimestamp is 0, so we need block.timestamp >= 0 + intervalSecs
+        // Since block.timestamp starts small, this should fail
         vm.deal(address(vrfConsumer), expectedPrice);
         vm.expectRevert("Too soon to resolve lottery");
         vrfConsumer.requestRandomWords();
         
-        // Fast forward but not enough
-        uint256 intervalSecs = vrfConsumer.lotteryIntervalHours() * 3600;
-        vm.warp(block.timestamp + intervalSecs - 1);
+        // Fast forward but not enough - warp to a time that's still less than intervalSecs from 0
+        // Since lastRequestTimestamp is still 0 (first call reverted), we need block.timestamp < intervalSecs
+        vm.warp(intervalSecs - 1);
         
         vm.expectRevert("Too soon to resolve lottery");
         vrfConsumer.requestRandomWords();
         
-        // Fast forward enough time
-        vm.warp(block.timestamp + 2);
+        // Fast forward enough time - now block.timestamp should be >= intervalSecs
+        vm.warp(intervalSecs);
         
         // Should succeed now
         vrfConsumer.requestRandomWords();
