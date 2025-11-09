@@ -182,20 +182,36 @@ contract VrfConsumerE2ETest is Test {
      * @dev Test participation when not accepting participants
      */
     function test_LotteryParticipation_NotAccepting() public {
-        // Manually set acceptingParticipants to false (simulating mid-fulfillment state)
-        // This is tricky since it's internal, so we'll test via the actual flow
         uint256 entryFee = vrfConsumer.lotteryEntryFee();
         
+        // Initially, should be accepting participants
+        assertTrue(vrfConsumer.acceptingParticipants(), "Should be accepting participants initially");
+        
+        // Add a participant and fulfill to test the flow
         vm.prank(participant1);
         vrfConsumer.participateInLottery{value: entryFee}();
         
-        // Fast forward and fulfill to set acceptingParticipants to false temporarily
+        // Fast forward and fulfill
         vm.warp(block.timestamp + vrfConsumer.lotteryIntervalHours() * 3600 + 1);
-        vrfConsumer.requestRandomWords();
-
-        // During fulfillment, acceptingParticipants is set to false
-        // But it's set back to true at the end, so we can't easily test the false state
-        // This is tested indirectly through the fulfillment flow
+        
+        uint256 expectedPrice = mockVrfWrapper.calculateRequestPriceNative(
+            uint32(vrfConsumer.callbackGasLimit()),
+            uint32(vrfConsumer.numWords())
+        );
+        vm.deal(address(vrfConsumer), expectedPrice);
+        
+        uint256 requestId = vrfConsumer.requestRandomWords();
+        
+        uint256[] memory randomWords = new uint256[](1);
+        randomWords[0] = 0;
+        
+        // During fulfillment, acceptingParticipants is set to false temporarily
+        // After fulfillment, it's set back to true
+        vm.prank(address(mockVrfWrapper));
+        mockVrfWrapper.fulfillRandomWords(requestId, randomWords);
+        
+        // After fulfillment, should be accepting participants again
+        assertTrue(vrfConsumer.acceptingParticipants(), "Should be accepting participants after fulfillment");
     }
     
     // ============ VRF Request Flow Tests ============
@@ -243,7 +259,15 @@ contract VrfConsumerE2ETest is Test {
         vm.prank(participant1);
         vrfConsumer.participateInLottery{value: entryFee}();
         
-        // Try to request immediately - should fail
+        // Calculate expected price for later use
+        uint256 expectedPrice = mockVrfWrapper.calculateRequestPriceNative(
+            uint32(vrfConsumer.callbackGasLimit()),
+            uint32(vrfConsumer.numWords())
+        );
+        
+        // Try to request immediately - should fail (but will also fail due to insufficient funds)
+        // So we need to fund it first, but it should still fail due to time interval
+        vm.deal(address(vrfConsumer), expectedPrice);
         vm.expectRevert("Too soon to resolve lottery");
         vrfConsumer.requestRandomWords();
         
@@ -256,12 +280,6 @@ contract VrfConsumerE2ETest is Test {
         
         // Fast forward enough time
         vm.warp(block.timestamp + 2);
-        
-        uint256 expectedPrice = mockVrfWrapper.calculateRequestPriceNative(
-            uint32(vrfConsumer.callbackGasLimit()),
-            uint32(vrfConsumer.numWords())
-        );
-        vm.deal(address(vrfConsumer), expectedPrice);
         
         // Should succeed now
         vrfConsumer.requestRandomWords();
