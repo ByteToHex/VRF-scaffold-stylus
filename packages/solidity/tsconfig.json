@@ -24,9 +24,10 @@
     "noUncheckedIndexedAccess": true,
     "resolveJsonModule": true,
     "allowSyntheticDefaultImports": true,
-    "baseUrl": "./",
+    "moduleResolution": "node",
+    "baseUrl": "../../",
     "paths": {
-      "@/*": ["scripts/*"]
+      "@/*": ["packages/solidity/scripts/*"]
     }
   },
   "include": [

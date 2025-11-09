@@ -15,7 +15,7 @@ import { DeployOptions } from "./utils/type";
 import { buildDeployCommand } from "./utils/command";
 import { Abi, createPublicClient, createWalletClient, http } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
-import { arbitrumNitro } from "../../../nextjs/utils/scaffold-stylus/supportedChains";
+import { arbitrumNitro } from "packages/nextjs/utils/scaffold-stylus/supportedChains";
 
 /**
  * Deploy a single contract using Foundry

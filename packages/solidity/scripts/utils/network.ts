@@ -6,7 +6,7 @@ import {
   eduChainTestnet,
   superpositionTestnet,
   eduChain,
-} from "../../../nextjs/utils/scaffold-stylus/supportedChains";
+} from "packages/nextjs/utils/scaffold-stylus/supportedChains";
 import * as path from "path";
 import * as fs from "fs";
 import { config as dotenvConfig } from "dotenv";

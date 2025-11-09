@@ -1,7 +1,7 @@
 import { config as dotenvConfig } from "dotenv";
 import * as path from "path";
 import * as fs from "fs";
-import { arbitrumNitro } from "../../../nextjs/utils/scaffold-stylus/supportedChains";
+import { arbitrumNitro } from "packages/nextjs/utils/scaffold-stylus/supportedChains";
 import { DeploymentConfig, DeployOptions, DeploymentData } from "./type";
 import { getAccountAddress, getChain, getPrivateKey } from "./network";
 import { getContractNameFromSolidityFile } from "./contract";

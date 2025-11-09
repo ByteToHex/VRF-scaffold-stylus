@@ -16,10 +16,10 @@
   "scripts": {
     "build": "tsc",
     "clean-contracts": "git clean -xdf -e .env -e node_modules/",
-    "deploy": "ts-node scripts/deploy_wrapper.ts",
+    "deploy": "ts-node -r tsconfig-paths/register scripts/deploy_wrapper.ts",
     "dev": "tsc --watch",
-    "export-abi": "ts-node scripts/export_abi.ts",
-    "info:networks": "ts-node scripts/test_network.ts",
+    "export-abi": "ts-node -r tsconfig-paths/register scripts/export_abi.ts",
+    "info:networks": "ts-node -r tsconfig-paths/register scripts/test_network.ts",
     "lint": "eslint scripts --ext .ts",
     "lint:fix": "eslint scripts --ext .ts --fix",
     "start": "node dist/index.js",
@@ -31,6 +31,7 @@
     "ethers": "^6.15.0",
     "prettier": "^3.6.2",
     "ts-node": "^10.9.2",
+    "tsconfig-paths": "^4.2.0",
     "viem": "^1.19.9"
   },
   "devDependencies": {
