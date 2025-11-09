@@ -35,8 +35,6 @@ contract VrfConsumer is Ownable, ReentrancyGuard {
 
     // VRF variables
     address public iVrfV2PlusWrapper;
-    uint256 public lastFulfilledId;
-    uint256 public lastFulfilledValue;
     address public lastWinner;
 
     // Request tracking variables (from DirectFundingConsumer)
@@ -230,17 +228,10 @@ contract VrfConsumer is Ownable, ReentrancyGuard {
         sRequestsFulfilled[requestId] = true;
 
         // Store random value for this request
-        uint256 fulfilledValue = randomWords.length > 0
-            ? randomWords[0]
-            : 0;
-        
         if (randomWords.length > 0) {
             sRequestsValue[requestId] = randomWords[0];
         }
 
-        // Store only the last fulfilled request (for backward compatibility)
-        lastFulfilledId = requestId;
-        lastFulfilledValue = fulfilledValue;
         acceptingParticipants = false;
 
         address winnerAddress = decideWinner(randomWords);
@@ -265,22 +256,6 @@ contract VrfConsumer is Ownable, ReentrancyGuard {
         }
 
         fulfillRandomWords(requestId, randomWords);
-    }
-
-    /**
-     * @dev Get the last fulfilled request ID
-     * @return The last fulfilled request ID
-     */
-    function getLastFulfilledId() external view returns (uint256) {
-        return lastFulfilledId;
-    }
-
-    /**
-     * @dev Get the last fulfilled random value
-     * @return The last fulfilled random value
-     */
-    function getLastFulfilledValue() external view returns (uint256) {
-        return lastFulfilledValue;
     }
 
     /**
