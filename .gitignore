@@ -17,3 +17,6 @@ node_modules
 
 # config
 *.env
+
+# solidity module specific
+cache/
