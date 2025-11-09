@@ -8,14 +8,5 @@ optimizer_runs = 200
 via_ir = false
 evm_version = "paris"
 ffi = false
-
-[profile.default.metadata]
-bytecode_hash = "ipfs"
-
-[profile.default.gas_reports]
-"*" = ["ERC20Example", "VrfConsumer"]
-
-[profile.default.rpc_endpoints]
-arbitrum_sepolia = "${ARBITRUM_SEPOLIA_RPC_URL}"
-local = "http://localhost:8545"
+gas_reports = ["ERC20Example", "VrfConsumer"]
 
