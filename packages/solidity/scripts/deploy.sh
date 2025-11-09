@@ -85,6 +85,7 @@ else
 fi
 
 # Parse command-line arguments
+VRF_WRAPPER=""
 while [[ $# -gt 0 ]]; do
   case $1 in
     --rpc-url)
@@ -99,11 +100,16 @@ while [[ $# -gt 0 ]]; do
       export PRIVATE_KEY="$2"
       shift 2
       ;;
+    --vrf-wrapper)
+      VRF_WRAPPER="$2"
+      shift 2
+      ;;
     --network)
       case "$2" in
         sepolia|arbitrum-sepolia)
           export RPC_URL="${RPC_URL:-https://sepolia-rollup.arbitrum.io/rpc}"
           export CHAIN_ID="421614"
+          VRF_WRAPPER="${VRF_WRAPPER:-0x29576aB8152A09b9DC634804e4aDE73dA1f3a3CC}"
           ;;
         local|localhost)
           export RPC_URL="http://127.0.0.1:8547"
@@ -123,11 +129,12 @@ while [[ $# -gt 0 ]]; do
       echo "  --rpc-url <url>         Set RPC URL"
       echo "  --chain-id <id>         Set chain ID"
       echo "  --private-key <key>     Set private key"
+      echo "  --vrf-wrapper <address> Set VRF wrapper address (overrides network defaults)"
       echo "  --help, -h              Show this help message"
       echo ""
       echo "Examples:"
       echo "  $0 --network sepolia"
-      echo "  $0 --rpc-url https://sepolia-rollup.arbitrum.io/rpc --chain-id 421614"
+      echo "  $0 --rpc-url https://sepolia-rollup.arbitrum.io/rpc --chain-id 421614 --vrf-wrapper 0x29576aB8152A09b9DC634804e4aDE73dA1f3a3CC"
       exit 0
       ;;
     *)
@@ -191,8 +198,15 @@ echo ""
 mkdir -p $ABI_DIR
 mkdir -p $DEPLOYMENT_DIR
 
-# Determine VRF wrapper address based on network
-if [[ "$RPC_URL" == *"127.0.0.1:8547"* ]]; then
+# Determine VRF wrapper address
+# Priority: --vrf-wrapper arg > VRF_WRAPPER from --network > MOCK_VRF_ADDRESS env var > deploy mock for localhost
+if [ -n "$VRF_WRAPPER" ]; then
+  # Use VRF wrapper from argument
+  MOCK_VRF="$VRF_WRAPPER"
+  echo "⏭️  Skipping MockVRFV2PlusWrapper deployment"
+  echo "   Using VRF wrapper from argument: $MOCK_VRF"
+  echo ""
+elif [[ "$RPC_URL" == *"127.0.0.1:8547"* ]] || [[ "$RPC_URL" == *"localhost"* ]]; then
   # Local node: Deploy MockVRFV2PlusWrapper
   echo "🚀 Deploying MockVRFV2PlusWrapper..."
   MOCK_VRF_OUTPUT=$(forge create --rpc-url $RPC_URL --private-key $PRIVATE_KEY \
@@ -236,24 +250,19 @@ if [[ "$RPC_URL" == *"127.0.0.1:8547"* ]]; then
     echo "⚠️  Failed to update deployedContracts.ts for MockVRFV2PlusWrapper"
   fi
   echo ""
-elif [ "$CHAIN_ID" = "421614" ]; then
-  # Arbitrum Sepolia: Use real VRF wrapper
-  MOCK_VRF="0x29576aB8152A09b9DC634804e4aDE73dA1f3a3CC"
-  echo "⏭️  Skipping MockVRFV2PlusWrapper deployment (using real VRF wrapper on Arbitrum Sepolia)"
-  echo "   Using Arbitrum Sepolia VRF V2+ Wrapper: $MOCK_VRF"
+elif [ -n "${MOCK_VRF_ADDRESS:-}" ]; then
+  # Use VRF wrapper from environment variable
+  MOCK_VRF="$MOCK_VRF_ADDRESS"
+  echo "⏭️  Skipping MockVRFV2PlusWrapper deployment"
+  echo "   Using VRF wrapper from environment: $MOCK_VRF"
   echo ""
 else
-  # Other networks: Use MOCK_VRF_ADDRESS env var
-  if [ -n "$MOCK_VRF_ADDRESS" ]; then
-    MOCK_VRF="$MOCK_VRF_ADDRESS"
-    echo "⏭️  Skipping MockVRFV2PlusWrapper deployment"
-    echo "   Using provided VRF wrapper address: $MOCK_VRF"
-  else
-    echo "⏭️  Skipping MockVRFV2PlusWrapper deployment"
-    echo "⚠️  MOCK_VRF_ADDRESS not set. VrfConsumer deployment may fail if it requires a VRF wrapper."
-    echo "   Set MOCK_VRF_ADDRESS environment variable with the VRF wrapper address."
-    MOCK_VRF=""
-  fi
+  echo "⚠️  No VRF wrapper address provided. VrfConsumer deployment may fail."
+  echo "   Options:"
+  echo "   - Use --vrf-wrapper <address> argument"
+  echo "   - Use --network sepolia (auto-sets Arbitrum Sepolia wrapper)"
+  echo "   - Set MOCK_VRF_ADDRESS environment variable"
+  MOCK_VRF=""
   echo ""
 fi
 

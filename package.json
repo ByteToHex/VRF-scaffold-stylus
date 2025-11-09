@@ -15,7 +15,6 @@
     "compile": "yarn workspace @ss/stylus compile",
     "deploy": "yarn workspace @ss/stylus deploy",
     "deploy:solidity": "bash ./packages/solidity/scripts/deploy.sh",
-    "deploy:solidity:sepolia": "bash ./packages/solidity/scripts/deploy.sh --network sepolia",
     "export-abi": "yarn workspace @ss/stylus export-abi",
     "flatten": "yarn workspace @ss/stylus flatten",
     "fork": "yarn workspace @ss/stylus fork",
