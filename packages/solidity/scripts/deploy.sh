@@ -84,8 +84,62 @@ else
   echo ""
 fi
 
-# Configuration (after .env loading so env vars can override defaults)
-# Check again if RPC_URL is now pointing to localhost (might have been set in .env)
+# Parse command-line arguments
+while [[ $# -gt 0 ]]; do
+  case $1 in
+    --rpc-url)
+      export RPC_URL="$2"
+      shift 2
+      ;;
+    --chain-id)
+      export CHAIN_ID="$2"
+      shift 2
+      ;;
+    --private-key)
+      export PRIVATE_KEY="$2"
+      shift 2
+      ;;
+    --network)
+      case "$2" in
+        sepolia|arbitrum-sepolia)
+          export RPC_URL="${RPC_URL:-https://sepolia-rollup.arbitrum.io/rpc}"
+          export CHAIN_ID="421614"
+          ;;
+        local|localhost)
+          export RPC_URL="http://127.0.0.1:8547"
+          ;;
+        *)
+          echo "⚠️  Unknown network: $2"
+          echo "   Supported networks: sepolia, arbitrum-sepolia, local, localhost"
+          ;;
+      esac
+      shift 2
+      ;;
+    --help|-h)
+      echo "Usage: $0 [OPTIONS]"
+      echo ""
+      echo "Options:"
+      echo "  --network <network>     Set network (sepolia, arbitrum-sepolia, local, localhost)"
+      echo "  --rpc-url <url>         Set RPC URL"
+      echo "  --chain-id <id>         Set chain ID"
+      echo "  --private-key <key>     Set private key"
+      echo "  --help, -h              Show this help message"
+      echo ""
+      echo "Examples:"
+      echo "  $0 --network sepolia"
+      echo "  $0 --rpc-url https://sepolia-rollup.arbitrum.io/rpc --chain-id 421614"
+      exit 0
+      ;;
+    *)
+      echo "⚠️  Unknown option: $1"
+      echo "   Use --help for usage information"
+      shift
+      ;;
+  esac
+done
+
+# Configuration (after .env loading and arg parsing so env vars and args can override defaults)
+# Check again if RPC_URL is now pointing to localhost (might have been set in .env or args)
 if [[ -n "${RPC_URL:-}" ]] && \
    ([[ "$RPC_URL" == *"127.0.0.1:8547"* ]] || [[ "$RPC_URL" == *"localhost"* ]]); then
   echo "ℹ️  RPC_URL points to localhost, using local node configuration"
