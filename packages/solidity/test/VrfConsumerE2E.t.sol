@@ -194,8 +194,8 @@ contract VrfConsumerE2ETest is Test {
         vm.warp(block.timestamp + vrfConsumer.lotteryIntervalHours() * 3600 + 1);
         
         uint256 expectedPrice = mockVrfWrapper.calculateRequestPriceNative(
-            uint32(vrfConsumer.callbackGasLimit()),
-            uint32(vrfConsumer.numWords())
+            vrfConsumer.callbackGasLimit(),
+            vrfConsumer.numWords()
         );
         vm.deal(address(vrfConsumer), expectedPrice);
         
@@ -234,14 +234,14 @@ contract VrfConsumerE2ETest is Test {
         
         // Fund VRF consumer for request
         uint256 expectedPrice = mockVrfWrapper.calculateRequestPriceNative(
-            uint32(vrfConsumer.callbackGasLimit()),
-            uint32(vrfConsumer.numWords())
+            vrfConsumer.callbackGasLimit(),
+            vrfConsumer.numWords()
         );
         vm.deal(address(vrfConsumer), expectedPrice);
         
         // Request random words
         vm.expectEmit(true, false, false, true);
-        emit RequestSent(0, uint32(vrfConsumer.numWords()), expectedPrice);
+        emit RequestSent(0, vrfConsumer.numWords(), expectedPrice);
         
         uint256 requestId = vrfConsumer.requestRandomWords();
         
@@ -260,8 +260,8 @@ contract VrfConsumerE2ETest is Test {
         
         // Calculate expected price for later use
         uint256 expectedPrice = mockVrfWrapper.calculateRequestPriceNative(
-            uint32(vrfConsumer.callbackGasLimit()),
-            uint32(vrfConsumer.numWords())
+            vrfConsumer.callbackGasLimit(),
+            vrfConsumer.numWords()
         );
         
         uint256 intervalSecs = vrfConsumer.lotteryIntervalHours() * 3600;
@@ -292,8 +292,8 @@ contract VrfConsumerE2ETest is Test {
      */
     function test_VRFRequest_PriceCalculation() public view {
         uint256 expectedPrice = mockVrfWrapper.calculateRequestPriceNative(
-            uint32(vrfConsumer.callbackGasLimit()),
-            uint32(vrfConsumer.numWords())
+            vrfConsumer.callbackGasLimit(),
+            vrfConsumer.numWords()
         );
         
         assertEq(expectedPrice, REQUEST_PRICE * vrfConsumer.numWords(), "Price should match");
@@ -324,8 +324,8 @@ contract VrfConsumerE2ETest is Test {
         vm.warp(block.timestamp + vrfConsumer.lotteryIntervalHours() * 3600 + 1);
         
         uint256 expectedPrice = mockVrfWrapper.calculateRequestPriceNative(
-            uint32(vrfConsumer.callbackGasLimit()),
-            uint32(vrfConsumer.numWords())
+            vrfConsumer.callbackGasLimit(),
+            vrfConsumer.numWords()
         );
         vm.deal(address(vrfConsumer), expectedPrice);
         
@@ -385,8 +385,8 @@ contract VrfConsumerE2ETest is Test {
         vm.warp(block.timestamp + vrfConsumer.lotteryIntervalHours() * 3600 + 1);
         
         uint256 expectedPrice = mockVrfWrapper.calculateRequestPriceNative(
-            uint32(vrfConsumer.callbackGasLimit()),
-            uint32(vrfConsumer.numWords())
+            vrfConsumer.callbackGasLimit(),
+            vrfConsumer.numWords()
         );
         vm.deal(address(vrfConsumer), expectedPrice);
         
@@ -421,8 +421,8 @@ contract VrfConsumerE2ETest is Test {
         vm.warp(block.timestamp + vrfConsumer.lotteryIntervalHours() * 3600 + 1);
         
         uint256 expectedPrice = mockVrfWrapper.calculateRequestPriceNative(
-            uint32(vrfConsumer.callbackGasLimit()),
-            uint32(vrfConsumer.numWords())
+            vrfConsumer.callbackGasLimit(),
+            vrfConsumer.numWords()
         );
         vm.deal(address(vrfConsumer), expectedPrice);
         
@@ -459,8 +459,8 @@ contract VrfConsumerE2ETest is Test {
         vm.warp(block.timestamp + vrfConsumer.lotteryIntervalHours() * 3600 + 1);
         
         uint256 expectedPrice = mockVrfWrapper.calculateRequestPriceNative(
-            uint32(vrfConsumer.callbackGasLimit()),
-            uint32(vrfConsumer.numWords())
+            vrfConsumer.callbackGasLimit(),
+            vrfConsumer.numWords()
         );
         vm.deal(address(vrfConsumer), expectedPrice);
         
@@ -508,8 +508,8 @@ contract VrfConsumerE2ETest is Test {
         vm.warp(block.timestamp + vrfConsumer.lotteryIntervalHours() * 3600 + 1);
         
         uint256 expectedPrice = mockVrfWrapper.calculateRequestPriceNative(
-            uint32(vrfConsumer.callbackGasLimit()),
-            uint32(vrfConsumer.numWords())
+            vrfConsumer.callbackGasLimit(),
+            vrfConsumer.numWords()
         );
         vm.deal(address(vrfConsumer), expectedPrice);
         
@@ -541,8 +541,8 @@ contract VrfConsumerE2ETest is Test {
         vm.warp(block.timestamp + vrfConsumer.lotteryIntervalHours() * 3600 + 1);
         
         uint256 expectedPrice = mockVrfWrapper.calculateRequestPriceNative(
-            uint32(vrfConsumer.callbackGasLimit()),
-            uint32(vrfConsumer.numWords())
+            vrfConsumer.callbackGasLimit(),
+            vrfConsumer.numWords()
         );
         vm.deal(address(vrfConsumer), expectedPrice);
         
@@ -591,8 +591,8 @@ contract VrfConsumerE2ETest is Test {
         vm.warp(block.timestamp + vrfConsumer.lotteryIntervalHours() * 3600 + 1);
         
         uint256 expectedPrice = mockVrfWrapper.calculateRequestPriceNative(
-            uint32(vrfConsumer.callbackGasLimit()),
-            uint32(vrfConsumer.numWords())
+            vrfConsumer.callbackGasLimit(),
+            vrfConsumer.numWords()
         );
         vm.deal(address(vrfConsumer), expectedPrice);
         
@@ -619,8 +619,8 @@ contract VrfConsumerE2ETest is Test {
         vm.warp(block.timestamp + vrfConsumer.lotteryIntervalHours() * 3600 + 1);
         
         uint256 expectedPrice = mockVrfWrapper.calculateRequestPriceNative(
-            uint32(vrfConsumer.callbackGasLimit()),
-            uint32(vrfConsumer.numWords())
+            vrfConsumer.callbackGasLimit(),
+            vrfConsumer.numWords()
         );
         vm.deal(address(vrfConsumer), expectedPrice);
         
@@ -680,8 +680,8 @@ contract VrfConsumerE2ETest is Test {
         vm.warp(block.timestamp + vrfConsumer.lotteryIntervalHours() * 3600 + 1);
         
         uint256 expectedPrice = mockVrfWrapper.calculateRequestPriceNative(
-            uint32(vrfConsumer.callbackGasLimit()),
-            uint32(vrfConsumer.numWords())
+            vrfConsumer.callbackGasLimit(),
+            vrfConsumer.numWords()
         );
         vm.deal(address(vrfConsumer), expectedPrice);
         

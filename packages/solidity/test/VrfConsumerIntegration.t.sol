@@ -85,8 +85,8 @@ contract VrfConsumerIntegrationTest is Test {
         
         // Fund VRF consumer for request
         uint256 expectedPrice = mockVrfWrapper.calculateRequestPriceNative(
-            uint32(vrfConsumer.callbackGasLimit()),
-            uint32(vrfConsumer.numWords())
+            vrfConsumer.callbackGasLimit(),
+            vrfConsumer.numWords()
         );
         vm.deal(address(vrfConsumer), expectedPrice);
         
@@ -128,8 +128,8 @@ contract VrfConsumerIntegrationTest is Test {
         
         // Fund VRF consumer for request
         uint256 expectedPrice = mockVrfWrapper.calculateRequestPriceNative(
-            uint32(vrfConsumer.callbackGasLimit()),
-            uint32(vrfConsumer.numWords())
+            vrfConsumer.callbackGasLimit(),
+            vrfConsumer.numWords()
         );
         vm.deal(address(vrfConsumer), expectedPrice);
         
@@ -181,8 +181,8 @@ contract VrfConsumerIntegrationTest is Test {
         
         // Fund VRF consumer for request
         uint256 expectedPrice = mockVrfWrapper.calculateRequestPriceNative(
-            uint32(vrfConsumer.callbackGasLimit()),
-            uint32(vrfConsumer.numWords())
+            vrfConsumer.callbackGasLimit(),
+            vrfConsumer.numWords()
         );
         vm.deal(address(vrfConsumer), expectedPrice);
         
@@ -225,8 +225,8 @@ contract VrfConsumerIntegrationTest is Test {
         
         // Fund VRF consumer for request
         uint256 expectedPrice2 = mockVrfWrapper.calculateRequestPriceNative(
-            uint32(vrfConsumer.callbackGasLimit()),
-            uint32(vrfConsumer.numWords())
+            vrfConsumer.callbackGasLimit(),
+            vrfConsumer.numWords()
         );
         vm.deal(address(vrfConsumer), expectedPrice2);
         
