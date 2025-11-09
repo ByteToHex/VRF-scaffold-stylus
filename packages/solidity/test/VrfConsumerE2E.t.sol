@@ -97,8 +97,7 @@ contract VrfConsumerE2ETest is Test {
         assertEq(vrfConsumer.lotteryIntervalHours(), 4, "Lottery interval should be 4 hours");
         assertTrue(vrfConsumer.acceptingParticipants(), "Should be accepting participants initially");
         assertEq(vrfConsumer.getParticipantCount(), 0, "Initial participant count should be zero");
-        assertEq(vrfConsumer.lastFulfilledId(), 0, "Initial fulfilled ID should be zero");
-        assertEq(vrfConsumer.lastFulfilledValue(), 0, "Initial fulfilled value should be zero");
+        assertEq(vrfConsumer.getLastRequestId(), 0, "Initial request ID should be zero");
     }
     
     // ============ Contract Integration Setup Tests ============
@@ -346,8 +345,10 @@ contract VrfConsumerE2ETest is Test {
         mockVrfWrapper.fulfillRandomWords(requestId, randomWords);
         
         // Verify state updates
-        assertEq(vrfConsumer.lastFulfilledId(), requestId, "Last fulfilled ID should be updated");
-        assertEq(vrfConsumer.lastFulfilledValue(), randomWords[0], "Last fulfilled value should be updated");
+        (uint256 paid, bool fulfilled, uint256 randomWord) = vrfConsumer.getRequestStatus(requestId);
+        assertTrue(fulfilled, "Request should be fulfilled");
+        assertEq(randomWord, randomWords[0], "Random word should match");
+        assertEq(paid, expectedPrice, "Paid amount should match expected price");
         assertTrue(vrfConsumer.acceptingParticipants(), "Should be accepting participants again");
         assertEq(vrfConsumer.getParticipantCount(), 0, "Participants array should be cleared");
         

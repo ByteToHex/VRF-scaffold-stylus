@@ -479,7 +479,9 @@ contract VrfConsumerReentrancyTest is Test {
         // Verify state consistency
         assertEq(vrfConsumer.getParticipantCount(), 0, "Participants should be cleared");
         assertTrue(vrfConsumer.acceptingParticipants(), "Should be accepting participants");
-        assertEq(vrfConsumer.lastFulfilledId(), requestId, "Last fulfilled ID should be correct");
+        (uint256 paid, bool fulfilled, uint256 randomWord) = vrfConsumer.getRequestStatus(requestId);
+        assertTrue(fulfilled, "Request should be fulfilled");
+        assertEq(randomWord, randomWords[0], "Random word should match");
         
         // Verify only one winner received tokens
         uint256 expectedReward = entryFee * 3;
