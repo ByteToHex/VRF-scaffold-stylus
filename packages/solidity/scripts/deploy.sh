@@ -73,7 +73,14 @@ if [ "$IS_LOCAL_NODE" = false ]; then
   
   # Load .env if found
   if [ -n "$ENV_FILE" ] && [ -f "$ENV_FILE" ]; then
+    echo "📁 Loading .env from: $ENV_FILE"
     load_env_file "$ENV_FILE"
+    # Debug: Check if PRIVATE_KEY was loaded
+    if [ -n "${PRIVATE_KEY:-}" ]; then
+      echo "✅ PRIVATE_KEY found in .env (starts with: ${PRIVATE_KEY:0:4}...)"
+    else
+      echo "⚠️  PRIVATE_KEY not found in .env file"
+    fi
     echo ""
   else
     echo "ℹ️  No .env file found, using environment variables and defaults"
@@ -157,8 +164,6 @@ if [[ -n "${RPC_URL:-}" ]] && \
 fi
 
 RPC_URL=${RPC_URL:-http://127.0.0.1:8547}
-PRIVATE_KEY=${PRIVATE_KEY:-0xb6b15c8cb491557369f3c7d2c287b053eb229daa9c22138887752191c9520659}
-OWNER_ADDRESS=$(cast wallet address $PRIVATE_KEY)
 ABI_DIR="deployments/abis"
 DEPLOYMENT_DIR="deployments"
 
@@ -170,6 +175,24 @@ if [ -z "$CHAIN_ID" ]; then
     CHAIN_ID="421614"
   fi
 fi
+
+# Set PRIVATE_KEY - check network-specific keys first (matching stylus script convention), then generic, then default
+if [ -z "${PRIVATE_KEY:-}" ]; then
+  # Check for network-specific private keys based on chain ID
+  if [ "$CHAIN_ID" = "421614" ] && [ -n "${PRIVATE_KEY_SEPOLIA:-}" ]; then
+    PRIVATE_KEY="$PRIVATE_KEY_SEPOLIA"
+    echo "✅ Using PRIVATE_KEY_SEPOLIA from .env"
+  elif [ "$CHAIN_ID" = "42161" ] && [ -n "${PRIVATE_KEY_MAINNET:-}" ]; then
+    PRIVATE_KEY="$PRIVATE_KEY_MAINNET"
+    echo "✅ Using PRIVATE_KEY_MAINNET from .env"
+  else
+    echo "⚠️  PRIVATE_KEY not set, using default (dev key)"
+    PRIVATE_KEY="0xb6b15c8cb491557369f3c7d2c287b053eb229daa9c22138887752191c9520659"
+  fi
+else
+  echo "✅ Using PRIVATE_KEY from .env or arguments"
+fi
+OWNER_ADDRESS=$(cast wallet address $PRIVATE_KEY)
 
 # Path to update script
 UPDATE_SCRIPT="scripts/update_deployed_contracts.js"
