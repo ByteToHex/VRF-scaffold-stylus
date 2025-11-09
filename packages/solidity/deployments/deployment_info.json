@@ -2,21 +2,21 @@
   "chainId": "local",
   "rpcUrl": "https://sepolia-rollup.arbitrum.io/rpc",
   "deployer": "0xCBd90f57A568428fea31BBFAe98dc9B9D758aF8d",
-  "deployedAt": "2025-11-09T17:07:26Z",
+  "deployedAt": "2025-11-09T18:08:39Z",
   "contracts": {
     "MockVRFV2PlusWrapper": {
       "address": "0x29576aB8152A09b9DC634804e4aDE73dA1f3a3CC",
       "abi": "deployments/abis/MockVRFV2PlusWrapper.json"
     },
     "ERC20Example": {
-      "address": "0x95157E9D69f7D0851401eD27223F08097cD19FA5",
+      "address": "0x45969c45b748D495C1E9FfCAd7FBc6fd1a80131D",
       "abi": "deployments/abis/ERC20Example.json",
       "name": "LotteryToken",
       "symbol": "LUK",
       "cap": "1000000000000000000000000"
     },
     "VrfConsumer": {
-      "address": "0x9968cA508a2EdB3EC48A98f24153422EF2494772",
+      "address": "0x5160B850DD85Fa3a268e70d7128F8f5CF0D0C390",
       "abi": "deployments/abis/VrfConsumer.json"
     }
   }
