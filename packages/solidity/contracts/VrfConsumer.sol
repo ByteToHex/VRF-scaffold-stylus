@@ -191,10 +191,8 @@ contract VrfConsumer is Ownable, ReentrancyGuard {
 
         if (winner != address(0)) {
             uint256 reward = lotteryEntryFee * len;
-            mintDistributionReward(winner, reward);
-
-            // Clear participants array
-            delete participants;
+            delete participants; // Clear participants array
+            mintDistributionReward(winner, reward);          
         }
 
         return winner;
