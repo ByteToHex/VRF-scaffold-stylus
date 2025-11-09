@@ -4,14 +4,14 @@ import { useEffect, useMemo } from "react";
 import { useSessionStorage } from "usehooks-ts";
 import { useTheme } from "next-themes";
 import { BarsArrowUpIcon } from "@heroicons/react/20/solid";
-import { ContractUI } from "~~/app/debug/_components/contract";
+import { ContractUI } from "~~/app/debugsolidity/_components/contract";
 import { ContractName, GenericContract } from "~~/utils/scaffold-eth/contract";
-import { useAllContracts } from "~~/utils/scaffold-eth/contractsData";
+import { useSolidityContracts } from "~~/utils/scaffold-eth/contractsDataSolidity";
 
-const selectedContractStorageKey = "scaffoldEth2.selectedContract";
+const selectedContractStorageKey = "scaffoldEth2.selectedSolidityContract";
 
-export function DebugContracts() {
-  const contractsData = useAllContracts();
+export function DebugContractsSolidity() {
+  const contractsData = useSolidityContracts();
   const { resolvedTheme } = useTheme();
   const isDarkMode = useMemo(() => resolvedTheme === "dark", [resolvedTheme]);
   const contractNames = useMemo(
@@ -37,7 +37,7 @@ export function DebugContracts() {
   return (
     <div className="flex flex-col gap-y-6 lg:gap-y-8 py-8 lg:py-12 justify-center items-center">
       {contractNames.length === 0 ? (
-        <p className="text-3xl mt-14">No contracts found!</p>
+        <p className="text-3xl mt-14">No Solidity contracts found!</p>
       ) : (
         <>
           {contractNames.length > 1 && (
