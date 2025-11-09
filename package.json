@@ -14,6 +14,7 @@
     "clean-contracts": "yarn workspace @ss/stylus clean-contracts",
     "compile": "yarn workspace @ss/stylus compile",
     "deploy": "yarn workspace @ss/stylus deploy",
+    "deploy:solidity": "./packages/solidity/scripts/deploy.sh",
     "export-abi": "yarn workspace @ss/stylus export-abi",
     "flatten": "yarn workspace @ss/stylus flatten",
     "fork": "yarn workspace @ss/stylus fork",

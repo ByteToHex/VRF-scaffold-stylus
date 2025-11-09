@@ -53,51 +53,89 @@ echo ""
 mkdir -p $ABI_DIR
 mkdir -p $DEPLOYMENT_DIR
 
-# Deploy Mock VRF Wrapper
-echo "🚀 Deploying MockVRFV2PlusWrapper..."
-MOCK_VRF_OUTPUT=$(forge create --rpc-url $RPC_URL --private-key $PRIVATE_KEY \
-  --broadcast \
-  test/mocks/MockVRFV2PlusWrapper.sol:MockVRFV2PlusWrapper \
-  --constructor-args $VRF_REQUEST_PRICE)
+# Arbitrum Sepolia real VRF wrapper address
+ARBITRUM_SEPOLIA_VRF_WRAPPER="0x29576aB8152A09b9DC634804e4aDE73dA1f3a3CC"
 
-MOCK_VRF=$(echo "$MOCK_VRF_OUTPUT" | grep "Deployed to:" | awk '{print $3}')
-# Extract transaction hash from forge output (look for various patterns)
-MOCK_VRF_TX=$(echo "$MOCK_VRF_OUTPUT" | grep -iE "(Transaction hash|tx hash|txHash|transactionHash|Deployment transaction):" | grep -oE "0x[a-fA-F0-9]{64}" | head -1)
-# If not found, try to extract from broadcast logs or any hex string that looks like a tx hash
-if [ -z "$MOCK_VRF_TX" ]; then
-  MOCK_VRF_TX=$(echo "$MOCK_VRF_OUTPUT" | grep -oE "0x[a-fA-F0-9]{64}" | grep -v "$MOCK_VRF" | head -1)
+# Check if we're on test chain (default local RPC)
+IS_TEST_CHAIN=false
+if [[ "$RPC_URL" == "http://127.0.0.1:8547" ]] || [[ "$RPC_URL" == *"127.0.0.1:8547"* ]]; then
+  IS_TEST_CHAIN=true
 fi
 
-if [ -z "$MOCK_VRF" ]; then
-  echo "❌ Failed to deploy MockVRFV2PlusWrapper"
-  echo "$MOCK_VRF_OUTPUT"
-  exit 1
+# Check if we're on Arbitrum Sepolia
+IS_ARBITRUM_SEPOLIA=false
+if [ "$CHAIN_ID" = "421614" ]; then
+  IS_ARBITRUM_SEPOLIA=true
 fi
 
-if [ -z "$MOCK_VRF_TX" ]; then
-  echo "⚠️  Could not extract transaction hash for MockVRFV2PlusWrapper, using empty string"
-  MOCK_VRF_TX=""
-fi
+# Deploy Mock VRF Wrapper (only on test chain)
+if [ "$IS_TEST_CHAIN" = true ]; then
+  echo "🚀 Deploying MockVRFV2PlusWrapper..."
+  MOCK_VRF_OUTPUT=$(forge create --rpc-url $RPC_URL --private-key $PRIVATE_KEY \
+    --broadcast \
+    test/mocks/MockVRFV2PlusWrapper.sol:MockVRFV2PlusWrapper \
+    --constructor-args $VRF_REQUEST_PRICE)
 
-echo "✅ MockVRFV2PlusWrapper deployed at: $MOCK_VRF"
-echo "   Transaction hash: $MOCK_VRF_TX"
+  MOCK_VRF=$(echo "$MOCK_VRF_OUTPUT" | grep "Deployed to:" | awk '{print $3}')
+  # Extract transaction hash from forge output (look for various patterns)
+  MOCK_VRF_TX=$(echo "$MOCK_VRF_OUTPUT" | grep -iE "(Transaction hash|tx hash|txHash|transactionHash|Deployment transaction):" | grep -oE "0x[a-fA-F0-9]{64}" | head -1)
+  # If not found, try to extract from broadcast logs or any hex string that looks like a tx hash
+  if [ -z "$MOCK_VRF_TX" ]; then
+    MOCK_VRF_TX=$(echo "$MOCK_VRF_OUTPUT" | grep -oE "0x[a-fA-F0-9]{64}" | grep -v "$MOCK_VRF" | head -1)
+  fi
 
-# Export Mock VRF ABI (extract from compiled JSON)
-if [ -f "out/MockVRFV2PlusWrapper.sol/MockVRFV2PlusWrapper.json" ]; then
-  jq '.abi' out/MockVRFV2PlusWrapper.sol/MockVRFV2PlusWrapper.json > $ABI_DIR/MockVRFV2PlusWrapper.json 2>/dev/null || \
-  python3 -c "import json; print(json.dumps(json.load(open('out/MockVRFV2PlusWrapper.sol/MockVRFV2PlusWrapper.json'))['abi']))" > $ABI_DIR/MockVRFV2PlusWrapper.json 2>/dev/null || \
-  node -e "console.log(JSON.stringify(require('./out/MockVRFV2PlusWrapper.sol/MockVRFV2PlusWrapper.json').abi, null, 2))" > $ABI_DIR/MockVRFV2PlusWrapper.json 2>/dev/null || \
-  echo "⚠️  Could not extract ABI automatically. Please extract manually from out/MockVRFV2PlusWrapper.sol/MockVRFV2PlusWrapper.json"
-fi
-echo "✅ Exported MockVRFV2PlusWrapper ABI"
+  if [ -z "$MOCK_VRF" ]; then
+    echo "❌ Failed to deploy MockVRFV2PlusWrapper"
+    echo "$MOCK_VRF_OUTPUT"
+    exit 1
+  fi
 
-# Update deployedContracts.ts
-if [ -f "$ABI_DIR/MockVRFV2PlusWrapper.json" ]; then
-  echo "📝 Updating deployedContracts.ts for MockVRFV2PlusWrapper..."
-  node $UPDATE_SCRIPT "$CHAIN_ID" "mock-vrf-v2-plus-wrapper-solidity" "$MOCK_VRF" "$MOCK_VRF_TX" "$ABI_DIR/MockVRFV2PlusWrapper.json" || \
-  echo "⚠️  Failed to update deployedContracts.ts for MockVRFV2PlusWrapper"
+  if [ -z "$MOCK_VRF_TX" ]; then
+    echo "⚠️  Could not extract transaction hash for MockVRFV2PlusWrapper, using empty string"
+    MOCK_VRF_TX=""
+  fi
+
+  echo "✅ MockVRFV2PlusWrapper deployed at: $MOCK_VRF"
+  echo "   Transaction hash: $MOCK_VRF_TX"
+
+  # Export Mock VRF ABI (extract from compiled JSON)
+  if [ -f "out/MockVRFV2PlusWrapper.sol/MockVRFV2PlusWrapper.json" ]; then
+    jq '.abi' out/MockVRFV2PlusWrapper.sol/MockVRFV2PlusWrapper.json > $ABI_DIR/MockVRFV2PlusWrapper.json 2>/dev/null || \
+    python3 -c "import json; print(json.dumps(json.load(open('out/MockVRFV2PlusWrapper.sol/MockVRFV2PlusWrapper.json'))['abi']))" > $ABI_DIR/MockVRFV2PlusWrapper.json 2>/dev/null || \
+    node -e "console.log(JSON.stringify(require('./out/MockVRFV2PlusWrapper.sol/MockVRFV2PlusWrapper.json').abi, null, 2))" > $ABI_DIR/MockVRFV2PlusWrapper.json 2>/dev/null || \
+    echo "⚠️  Could not extract ABI automatically. Please extract manually from out/MockVRFV2PlusWrapper.sol/MockVRFV2PlusWrapper.json"
+  fi
+  echo "✅ Exported MockVRFV2PlusWrapper ABI"
+
+  # Update deployedContracts.ts
+  if [ -f "$ABI_DIR/MockVRFV2PlusWrapper.json" ]; then
+    echo "📝 Updating deployedContracts.ts for MockVRFV2PlusWrapper..."
+    node $UPDATE_SCRIPT "$CHAIN_ID" "mock-vrf-v2-plus-wrapper-solidity" "$MOCK_VRF" "$MOCK_VRF_TX" "$ABI_DIR/MockVRFV2PlusWrapper.json" || \
+    echo "⚠️  Failed to update deployedContracts.ts for MockVRFV2PlusWrapper"
+  fi
+  echo ""
+elif [ "$IS_ARBITRUM_SEPOLIA" = true ]; then
+  echo "⏭️  Skipping MockVRFV2PlusWrapper deployment (using real VRF wrapper on Arbitrum Sepolia)"
+  MOCK_VRF="$ARBITRUM_SEPOLIA_VRF_WRAPPER"
+  echo "   Using Arbitrum Sepolia VRF V2+ Wrapper: $MOCK_VRF"
+  echo ""
+else
+  echo "⏭️  Skipping MockVRFV2PlusWrapper deployment (only deployed on test chain: http://127.0.0.1:8547)"
+  echo "   Using existing MockVRFV2PlusWrapper address or external VRF wrapper"
+  echo ""
+  
+  # For other networks, we need to get the VRF wrapper address from environment
+  # You can set MOCK_VRF_ADDRESS env var if you have a pre-deployed mock, or use a real VRF wrapper address
+  if [ -n "$MOCK_VRF_ADDRESS" ]; then
+    MOCK_VRF="$MOCK_VRF_ADDRESS"
+    echo "   Using provided VRF wrapper address: $MOCK_VRF"
+  else
+    echo "⚠️  MOCK_VRF_ADDRESS not set. VrfConsumer deployment may fail if it requires a VRF wrapper."
+    echo "   Set MOCK_VRF_ADDRESS environment variable with the VRF wrapper address."
+    MOCK_VRF=""
+  fi
+  echo ""
 fi
-echo ""
 
 # Deploy ERC20Example
 echo "🚀 Deploying ERC20Example..."
@@ -147,6 +185,12 @@ echo ""
 
 # Deploy VrfConsumer
 echo "🚀 Deploying VrfConsumer..."
+if [ -z "$MOCK_VRF" ]; then
+  echo "❌ Cannot deploy VrfConsumer: MockVRFV2PlusWrapper address is required"
+  echo "   Set MOCK_VRF_ADDRESS environment variable or deploy on test chain (http://127.0.0.1:8547)"
+  exit 1
+fi
+
 VRF_OUTPUT=$(forge create --rpc-url $RPC_URL --private-key $PRIVATE_KEY \
   --broadcast \
   contracts/VrfConsumer.sol:VrfConsumer \
