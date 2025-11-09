@@ -43,9 +43,9 @@ contract VrfConsumer is Ownable, ReentrancyGuard {
     mapping(uint256 => bool) public sRequestsFulfilled; // store if request was fulfilled
     uint256[] public requestIds;
 
-    uint256 public callbackGasLimit;
-    uint256 public requestConfirmations;
-    uint256 public numWords;
+    uint32 public callbackGasLimit;
+    uint16 public requestConfirmations;
+    uint32 public numWords;
 
     // Event variables
     bool public acceptingParticipants;
@@ -138,24 +138,14 @@ contract VrfConsumer is Ownable, ReentrancyGuard {
             "Too soon to resolve lottery"
         );
 
-        // casting to 'uint32' is safe because callbackGasLimit is initialized to 100000 and will not exceed uint32 max
-        // forge-lint: disable-next-line(unsafe-typecast)
-        uint32 callbackGasLimitValue = uint32(callbackGasLimit);
-        // casting to 'uint16' is safe because requestConfirmations is initialized to 3 and will not exceed uint16 max
-        // forge-lint: disable-next-line(unsafe-typecast)
-        uint16 requestConfirmationsValue = uint16(requestConfirmations);
-        // casting to 'uint32' is safe because numWords is initialized to 1 and will not exceed uint32 max
-        // forge-lint: disable-next-line(unsafe-typecast)
-        uint32 numWordsValue = uint32(numWords);
-
         // Update state BEFORE external call (Checks-Effects-Interactions pattern)
         lastRequestTimestamp = block.timestamp;
 
         uint256 reqPrice;
         (requestId, reqPrice) = requestRandomnessPayInNative(
-            callbackGasLimitValue,
-            requestConfirmationsValue,
-            numWordsValue
+            callbackGasLimit,
+            requestConfirmations,
+            numWords
         );
 
         // Store request status in separate mappings
@@ -165,7 +155,7 @@ contract VrfConsumer is Ownable, ReentrancyGuard {
         // Add to request IDs array
         requestIds.push(requestId);
 
-        emit RequestSent(requestId, numWordsValue, reqPrice);
+        emit RequestSent(requestId, numWords, reqPrice);
 
         return requestId;
     }
@@ -300,17 +290,10 @@ contract VrfConsumer is Ownable, ReentrancyGuard {
      * @return The price in wei
      */
     function getRequestPrice() external view returns (uint256) {
-        // casting to 'uint32' is safe because callbackGasLimit is initialized to 100000 and will not exceed uint32 max
-        // forge-lint: disable-next-line(unsafe-typecast)
-        uint32 callbackGasLimitValue = uint32(callbackGasLimit);
-        // casting to 'uint32' is safe because numWords is initialized to 1 and will not exceed uint32 max
-        // forge-lint: disable-next-line(unsafe-typecast)
-        uint32 numWordsValue = uint32(numWords);
-
         IVRFV2PlusWrapper vrfWrapper = IVRFV2PlusWrapper(iVrfV2PlusWrapper);
         return vrfWrapper.calculateRequestPriceNative(
-            callbackGasLimitValue,
-            numWordsValue
+            callbackGasLimit,
+            numWords
         );
     }
 
