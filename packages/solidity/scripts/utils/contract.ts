@@ -114,24 +114,122 @@ export function generateContractAddress(): string {
 export function extractDeploymentInfo(output: string): DeploymentData | null {
   let result: DeploymentData | null = null;
   const lines = output.split("\n");
+  let deployerAddress: string | null = null;
   
+  // First, try to extract from standard Foundry text format
   for (const line of lines) {
     // Foundry output format: "Deployed to: 0x..."
-    if (line.includes("Deployed to:")) {
+    if (line.includes("Deployed to:") || line.includes("deployed to:")) {
       const hexMatch = line.match(/(0x[a-fA-F0-9]{40})/);
       if (hexMatch && hexMatch[1]) {
-        result = { address: hexMatch[1] as Address, txHash: "" };
+        result = { address: hexMatch[1] as Address, txHash: result?.txHash || "" };
+        break; // Found the address, we can stop looking
       }
     }
-    // Foundry output format: "Transaction hash: 0x..."
-    if (line.includes("Transaction hash:") || line.includes("txHash:")) {
+    // Foundry output format: "Transaction hash: 0x..." or "txHash: 0x..."
+    if (line.includes("Transaction hash:") || line.includes("txHash:") || line.includes("transactionHash:")) {
       const txHashMatch = line.match(/(0x[a-fA-F0-9]{64})/);
       if (txHashMatch && txHashMatch[1]) {
-        result = {
-          address: result?.address as Address,
-          txHash: txHashMatch[1],
-        };
+        if (result) {
+          result.txHash = txHashMatch[1];
+        } else {
+          result = { address: "" as Address, txHash: txHashMatch[1] };
+        }
       }
+    }
+    // Extract deployer address from "from" field for later use
+    if (line.includes('"from"') || line.includes("from:")) {
+      const fromMatch = line.match(/(0x[a-fA-F0-9]{40})/);
+      if (fromMatch && fromMatch[1]) {
+        deployerAddress = fromMatch[1];
+      }
+    }
+  }
+  
+  // If we found the address in standard format, return it
+  if (result?.address) {
+    return result;
+  }
+  
+  // Try to extract from JSON format (if forge outputs JSON)
+  try {
+    // Look for JSON objects in the output - try to find the full transaction object
+    const jsonMatch = output.match(/\{[\s\S]*?"from"[\s\S]*?\}/);
+    if (jsonMatch) {
+      const jsonStr = jsonMatch[0];
+      const jsonObj = JSON.parse(jsonStr);
+      
+      // For contract creation, "to" is null, so we need to look elsewhere
+      // Try to find transaction hash in JSON
+      if (jsonObj.hash) {
+        if (!result) {
+          result = { address: "" as Address, txHash: jsonObj.hash };
+        } else {
+          result.txHash = jsonObj.hash;
+        }
+      }
+      
+      // Store deployer address if found
+      if (jsonObj.from) {
+        deployerAddress = jsonObj.from;
+      }
+    }
+  } catch (e) {
+    // JSON parsing failed, continue with other methods
+  }
+  
+  // Last resort: look for addresses in the output, but be smart about it
+  // Foundry typically outputs the contract address after "Contract:" line
+  if (!result?.address) {
+    let foundContractLine = false;
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i];
+      if (line && line.includes("Contract:") && !foundContractLine) {
+        foundContractLine = true;
+        // Look for address in the next few lines after "Contract:"
+        for (let j = i + 1; j < Math.min(i + 5, lines.length); j++) {
+          const nextLine = lines[j];
+          if (nextLine) {
+            const hexMatch = nextLine.match(/(0x[a-fA-F0-9]{40})/);
+            if (hexMatch && hexMatch[1]) {
+              // Make sure it's not the deployer address
+              if (!deployerAddress || hexMatch[1].toLowerCase() !== deployerAddress.toLowerCase()) {
+                result = { address: hexMatch[1] as Address, txHash: result?.txHash || "" };
+                break;
+              }
+            }
+          }
+        }
+        if (result?.address) break;
+      }
+    }
+  }
+  
+  // Final fallback: find all addresses and exclude the deployer
+  if (!result?.address) {
+    const addressMatches = output.match(/(0x[a-fA-F0-9]{40})/g);
+    if (addressMatches && addressMatches.length > 0) {
+      // Filter out deployer address if we know it
+      const uniqueAddresses = [...new Set(addressMatches)];
+      const filteredAddresses = deployerAddress
+        ? uniqueAddresses.filter(addr => addr.toLowerCase() !== deployerAddress!.toLowerCase())
+        : uniqueAddresses;
+      
+      if (filteredAddresses.length > 0) {
+        // Take the last unique address (often the contract address comes after deployer)
+        result = { address: filteredAddresses[filteredAddresses.length - 1] as Address, txHash: result?.txHash || "" };
+      } else if (uniqueAddresses.length > 0) {
+        // If all addresses are the deployer, take the last one anyway (might be wrong but better than nothing)
+        result = { address: uniqueAddresses[uniqueAddresses.length - 1] as Address, txHash: result?.txHash || "" };
+      }
+    }
+  }
+  
+  // If we still don't have a txHash, try to find any 64-character hex hash in the output
+  if (result?.address && !result.txHash) {
+    const txHashMatches = output.match(/(0x[a-fA-F0-9]{64})/g);
+    if (txHashMatches && txHashMatches.length > 0) {
+      result.txHash = txHashMatches[0];
     }
   }
   

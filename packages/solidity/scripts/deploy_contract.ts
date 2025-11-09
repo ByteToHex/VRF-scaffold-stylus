@@ -37,7 +37,6 @@ export default async function deploySolidityContract(
     console.log("\n🔨 Compiling contracts...");
     await executeCommand(
       "forge build",
-      config.contractFolder,
       "Compiling contracts with forge",
     );
 
@@ -45,7 +44,6 @@ export default async function deploySolidityContract(
     const deployCommand = await buildDeployCommand(config, deployOptions);
     const deployOutput = await executeCommand(
       deployCommand,
-      config.contractFolder,
       "Deploying contract with forge",
     );
 
@@ -137,7 +135,6 @@ export default async function deploySolidityContract(
         const verifyCommand = `forge verify-contract ${deploymentInfo.address} src/${config.contractName}.sol:${config.contractName} --rpc-url ${getRpcUrlFromChain(config.chain)} --etherscan-api-key ${process.env["ETHERSCAN_API_KEY"] || ""}`;
         const output = await executeCommand(
           verifyCommand,
-          config.contractFolder,
           "Verifying contract with forge",
         );
         console.log(output);

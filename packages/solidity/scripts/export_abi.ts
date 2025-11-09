@@ -58,7 +58,6 @@ export async function exportSolidityAbi(
       console.log("🔨 Compiling contracts to generate ABI...");
       await executeCommand(
         "forge build",
-        contractFolder,
         "Compiling contracts",
       );
     }

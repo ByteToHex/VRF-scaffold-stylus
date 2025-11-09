@@ -53,7 +53,6 @@ export async function buildDeployCommand(
 
 export function executeCommand(
   command: string,
-  cwd: string,
   description: string,
 ): Promise<string> {
   console.log(`\n🔄 ${description}...`);
@@ -62,8 +61,10 @@ export function executeCommand(
   console.log(`Executing: ${sanitizedCommand}`);
 
   return new Promise((resolve, reject) => {
+    // Run commands from the solidity package root (where foundry.toml is)
+    const workingDir = path.resolve(__dirname, "../..");
     const childProcess = spawn(command, [], {
-      cwd: path.resolve(__dirname, "../.."),
+      cwd: workingDir,
       shell: true,
       stdio: ["inherit", "pipe", "pipe"],
     });
