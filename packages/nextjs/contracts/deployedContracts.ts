@@ -7,8 +7,8 @@ import { GenericContractsDeclaration } from "../utils/scaffold-eth/contract";
 const deployedContracts = {
   "421614": {
     "erc20-example-solidity": {
-      address: "0x95157E9D69f7D0851401eD27223F08097cD19FA5",
-      txHash: "0x340f44b1f6f97fe4cea6a2cc65c321ed348b8ab4e9d90137b8ed8f37a0e02759",
+      address: "0x45969c45b748D495C1E9FfCAd7FBc6fd1a80131D",
+      txHash: "0xdf43827d34f999dede386af9f9ca7cb8d71bc3dee702c3bec94fcfe3f72f4690",
       abi: [
         {
           type: "constructor",
@@ -554,8 +554,8 @@ const deployedContracts = {
       ],
     },
     "vrf-consumer-solidity": {
-      address: "0x9968cA508a2EdB3EC48A98f24153422EF2494772",
-      txHash: "0x97a334b94e33d93613a55d6594125ca5099e7c8e311bb6cbd21f907a8010d1bf",
+      address: "0x5160B850DD85Fa3a268e70d7128F8f5CF0D0C390",
+      txHash: "0x383291f45db9b7a18410eb1cf1724e8d44c707b804eacc68ea54706cf6ac621f",
       abi: [
         {
           type: "constructor",

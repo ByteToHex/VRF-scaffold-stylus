@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
-import {VrfConsumer, IVRFV2PlusWrapper} from "../../contracts/VrfConsumer.sol";
+import {IVRFV2PlusWrapper} from "@chainlink/contracts/src/v0.8/vrf/dev/interfaces/IVRFV2PlusWrapper.sol";
+import {VrfConsumer} from "../../contracts/VrfConsumer.sol";
 
 /**
  * @title MockVRFV2PlusWrapper
@@ -14,9 +15,14 @@ contract MockVRFV2PlusWrapper is IVRFV2PlusWrapper {
     
     // Counter for request IDs
     uint256 private requestIdCounter;
+    uint256 private _lastRequestId;
     
     // Configurable request price
     uint256 public requestPrice;
+    
+    // Mock addresses for link token and native feed
+    address private _linkToken;
+    address private _linkNativeFeed;
     
     // Struct to store request details
     struct Request {
@@ -47,8 +53,31 @@ contract MockVRFV2PlusWrapper is IVRFV2PlusWrapper {
      */
     constructor(uint256 _requestPrice) {
         requestPrice = _requestPrice;
+        _linkToken = address(0);
+        _linkNativeFeed = address(0);
     }
     
+    /**
+     * @dev Get the last request ID
+     * @return The last request ID
+     */
+    function lastRequestId() external view override returns (uint256) {
+        return _lastRequestId;
+    }
+
+    /**
+     * @dev Calculate the request price (for LINK token)
+     * @param _numWords Number of random words requested
+     * @return The price in wei
+     */
+    function calculateRequestPrice(
+        uint32 /* _callbackGasLimit */,
+        uint32 _numWords
+    ) public view override returns (uint256) {
+        // Simple pricing: base price * numWords
+        return requestPrice * _numWords;
+    }
+
     /**
      * @dev Calculate the request price in native tokens
      * @param _numWords Number of random words requested
@@ -60,6 +89,50 @@ contract MockVRFV2PlusWrapper is IVRFV2PlusWrapper {
     ) public view override returns (uint256) {
         // Simple pricing: base price * numWords
         return requestPrice * _numWords;
+    }
+
+    /**
+     * @dev Estimate the request price with specific gas price (for LINK token)
+     * @param _numWords Number of random words requested
+     * @return The estimated price in wei
+     */
+    function estimateRequestPrice(
+        uint32 /* _callbackGasLimit */,
+        uint32 _numWords,
+        uint256 /* _requestGasPriceWei */
+    ) public view override returns (uint256) {
+        // Simple pricing: base price * numWords
+        return requestPrice * _numWords;
+    }
+
+    /**
+     * @dev Estimate the request price in native with specific gas price
+     * @param _numWords Number of random words requested
+     * @return The estimated price in wei
+     */
+    function estimateRequestPriceNative(
+        uint32 /* _callbackGasLimit */,
+        uint32 _numWords,
+        uint256 /* _requestGasPriceWei */
+    ) public view override returns (uint256) {
+        // Simple pricing: base price * numWords
+        return requestPrice * _numWords;
+    }
+
+    /**
+     * @dev Get the LINK token address
+     * @return The LINK token address
+     */
+    function link() external view override returns (address) {
+        return _linkToken;
+    }
+
+    /**
+     * @dev Get the LINK native feed address
+     * @return The LINK native feed address
+     */
+    function linkNativeFeed() external view override returns (address) {
+        return _linkNativeFeed;
     }
     
     /**
@@ -78,6 +151,7 @@ contract MockVRFV2PlusWrapper is IVRFV2PlusWrapper {
         require(msg.value >= calculateRequestPriceNative(_callbackGasLimit, _numWords), "Insufficient payment");
         
         requestId = requestIdCounter++;
+        _lastRequestId = requestId;
         
         requests[requestId] = Request({
             consumer: msg.sender,
